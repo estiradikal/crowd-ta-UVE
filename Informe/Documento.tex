@@ -1,0 +1,141 @@
+\documentclass[12pt, spanish]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{float}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+\title{\textbf{Informe de Modernización del Proyecto}}\\
+\subtitle{Etapa 1: Actualización del Entorno y Dependencias}
+
+\author{Estiven Martínez}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+El presente informe documenta los cambios realizados durante la primera etapa del proceso de modernización del proyecto \textit{``The Crowd Thinks Aloud''} (Crowd-TA-UVE). Esta etapa consistió en la creación de un entorno virtual con Python 3.13, la instalación de Django 5.1 y la actualización de todas las dependencias del proyecto a sus versiones más recientes. Además, se reemplazó la librería obsoleta \texttt{django-gsheets} por las soluciones modernas \texttt{gspread} y \texttt{google-api-python-client}. Finalmente, se creó una rama Git denominada \texttt{ramaEstiven} para aislar los cambios y se subió al repositorio remoto en GitHub.
+\end{abstract}
+
+\section{Introducción}
+El proyecto \textit{Crowd-TA-UVE} fue desarrollado originalmente con Django 3.0.8 y Python 3.8, y depende de varias librerías que hoy en día están obsoletas o son incompatibles con las versiones modernas de Python (3.13). El objetivo de esta modernización es hacer que el proyecto pueda ejecutarse en el entorno actual del desarrollador sin errores, manteniendo la funcionalidad original y preparando el código para futuras mejoras.
+
+Esta primera etapa se enfocó en la parte más crítica y de menor riesgo: el entorno de ejecución y las dependencias.
+
+\section{Acciones Realizadas}
+
+\subsection{Creación del Entorno Virtual}
+Se creó un entorno virtual aislado utilizando Python 3.13.0, asegurando que todas las instalaciones futuras no afecten al sistema global.
+
+\begin{lstlisting}[language=bash, caption={Comandos para crear y activar el entorno virtual}]
+cd C:\Users\ESTIVEN MARTINEZ\Desktop\Practica\crowd-ta-UVE\Source_Code
+python -m venv venv
+.\venv\Scripts\activate
+\end{lstlisting}
+
+\subsection{Actualización de Pip}
+Antes de instalar cualquier paquete, se actualizó \texttt{pip} a la última versión disponible.
+
+\begin{lstlisting}[language=bash, caption={Actualización de pip}]
+python -m pip install --upgrade pip
+\end{lstlisting}
+
+\subsection{Instalación de Django 5.1}
+Se instaló Django 5.1, que es la versión más reciente y estable con soporte para Python 3.13.
+
+\begin{lstlisting}[language=bash, caption={Instalación de Django 5.1}]
+pip install django==5.1
+\end{lstlisting}
+
+\subsection{Instalación de Dependencias Modernas}
+Se actualizaron todas las librerías utilizadas por el proyecto a sus versiones más recientes, reemplazando aquellas que estaban obsoletas.
+
+\begin{lstlisting}[language=bash, caption={Instalación de dependencias actualizadas}]
+pip install django-crispy-forms>=2.1
+pip install crispy-bootstrap5>=0.7
+pip install django-cors-headers>=4.3
+pip install django-extensions>=3.2
+pip install django-countries>=7.6
+pip install pillow>=10.0
+pip install django-language-field (versión 0.0.3)
+\end{lstlisting}
+
+\subsection{Reemplazo de \texttt{django-gsheets} por \texttt{gspread}}
+La librería \texttt{django-gsheets} (y su dependencia \texttt{gsheets}) estaban abandonadas y no son compatibles con Django 5.1. Se decidió reemplazarlas por las librerías estándar para interactuar con Google Sheets:
+
+\begin{lstlisting}[language=bash, caption={Instalación de nuevas librerías para Google Sheets}]
+pip install gspread>=6.0
+pip install google-api-python-client>=2.0
+pip install google-auth-oauthlib>=1.0
+\end{lstlisting}
+
+\subsection{Generación de \texttt{requirements\_modern.txt}}
+Se exportó la lista completa de dependencias instaladas para futuras referencias y despliegues.
+
+\begin{lstlisting}[language=bash, caption={Exportación de dependencias}]
+pip freeze > requirements_modern.txt
+\end{lstlisting}
+
+\subsection{Gestión de Versiones con Git}
+Se inicializó un repositorio Git en el proyecto y se creó una rama llamada \texttt{ramaEstiven} para aislar los cambios de modernización de la rama principal. Además, se subió esta rama al repositorio remoto en GitHub.
+
+\begin{lstlisting}[language=bash, caption={Comandos Git ejecutados}]
+git init
+git add .
+git checkout -b ramaEstiven
+git commit -m "Estado inicial del proyecto antes de la modernización (ramaEstiven)"
+git remote add origin https://github.com/estiradikal/crowd-ta-UVE
+git push -u origin ramaEstiven
+\end{lstlisting}
+
+\section{Estado Actual del Proyecto}
+Tras la finalización de esta etapa, el proyecto cuenta con:
+\begin{itemize}[label=--]
+    \item Un entorno virtual con Python 3.13 y Django 5.1.
+    \item Todas las dependencias instaladas en sus versiones más recientes.
+    \item Las librerías obsoletas (\texttt{django-gsheets}) han sido reemplazadas por alternativas modernas.
+    \item Los cambios se encuentran aislados en la rama \texttt{ramaEstiven} y respaldados en GitHub.
+\end{itemize}
+
+El código fuente aún no ha sido modificado; todos los cambios realizados hasta ahora son exclusivamente del entorno de ejecución y la configuración de dependencias.
+
+\section{Próximos Pasos}
+La siguiente etapa (Etapa 2) consistirá en la actualización del archivo \texttt{settings.py} para que sea compatible con Django 5.1, incluyendo ajustes en \texttt{DEBUG}, \texttt{ALLOWED\_HOSTS}, la configuración de la base de datos, las rutas de archivos estáticos, el middleware y las aplicaciones instaladas.
+
+\section{Conclusiones}
+La Etapa 1 se ha completado con éxito. El entorno de desarrollo está listo para comenzar la migración del código fuente. La decisión de reemplazar \texttt{django-gsheets} por \texttt{gspread} y \texttt{google-api-python-client} garantizará una mayor estabilidad y soporte a futuro. La creación de una rama independiente facilita el trabajo colaborativo y permite revertir cambios si fuera necesario.
+
+\end{document}
