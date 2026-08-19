@@ -11,12 +11,12 @@ import json
 from django.core import serializers
 from django import template
 
-#Total_Tasks_= TasksDescription.objects.all().count()
-#Total_Active = SubjectProfile.objects.all().count()
-#Task_1_Answer = TasksDescription.objects.get(task_id=1).answer
-#Task_1_Answer = Task_1_Answer.split("|");
-#Task_2_Answer = TasksDescription.objects.get(task_id=2).answer
-#Task_2_Answer = Task_2_Answer.split("|");
+Total_Tasks_= TasksDescription.objects.all().count()
+Total_Active = SubjectProfile.objects.all().count()
+Task_1_Answer = TasksDescription.objects.get(task_id=1).answer
+Task_1_Answer = Task_1_Answer.split("|");
+Task_2_Answer = TasksDescription.objects.get(task_id=2).answer
+Task_2_Answer = Task_2_Answer.split("|");
 
 # Eliminamos las variables globales y las reemplazamos con funciones que se ejecuten bajo demanda
 
