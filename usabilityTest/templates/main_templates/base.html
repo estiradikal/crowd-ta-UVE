@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+{% load static %} 
+<head>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <link rel="stylesheet" href="{% static '/css/base.css' %}">
+  {% block custom_styles %}{% endblock %}
+</head>
+<body>
+  <div class="content">
+    {% block page_content %}{% endblock %}
+  </div>
+  <div class="footer">
+    <div class="container">
+      <p class="text-muted">For Technical issues during the test, <strong>contact us</strong>  @<span><a href="mailto:ta.crowdsource@gmail.com?subject=Micro_workerId:{{ request.session.mwid }}" title="ta.crowdsource@gmail.com"> <u>ta.crowdsource@gmail.com</u></a>(use your worker-Id in subject) </span>   </p>
+    </div>
+  </div>
+</body>
+<footer>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    function check(){
+      if(document.documentMode){
+        $('.container').hide();
+        alert("Internet Explorer does not support this test. Please use Chrome or Firefox");
+      }
+    }
+    check();
+  </script>
+  {% block custom_scripts %}{% endblock %}
+</footer>

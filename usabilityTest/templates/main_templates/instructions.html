@@ -1,0 +1,16 @@
+{% extends "main_templates/base.html" %}
+{% load static %}
+{% block page_content %}
+{% block custom_styles %}
+<style>
+  iframe{
+    height: 80vh;
+  }
+  </style>
+{% endblock %}
+      <div class="container">
+        <h2>General Instructions</h2>  
+        <iframe src="https://docs.google.com/document/d/e/2PACX-1vT0-hQ-uLyiNucMANjnicGlXq69n8MJ6oL0K3nM2xf3qTLQEtQcq62dxAxbmQSQIeC31VqA9eHk3SCt/pub?embedded=true" width="100%" ></iframe>
+        <a class="btn btn-primary" style="margin-bottom:10%;" href="{% url 'user_registration' %}" role="button">Next</a>
+      </div>
+      {% endblock %}

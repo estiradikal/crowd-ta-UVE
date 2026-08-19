@@ -1,0 +1,36 @@
+{% extends "main_templates/base.html" %}
+{% load static %}
+{% block page_content %}
+
+<body>
+  <div class="container">
+    <h3>Part 2:  Training session</h3>
+
+
+    <!-- Wrapper for slides -->
+    <div class="item active">
+      <p>
+      The following video <strong>shows what we are expecting</strong> from you:
+    </p>
+      <iframe src="https://www.youtube.com/embed/5lcu3ig7IX4" width="50%" height="400" frameborder="0"
+        allow="autoplay; encrypted-media" allowfullscreen></iframe><br><br>
+      <h5><strong>Important</strong></h5>
+      <ol>
+        <li>To start the task, you should <strong>allow permissions for Screen Share, Mic, and Camera</strong> as shown below: <br><br>
+          <img src="{% static '/img/permissions.jpg' %}" alt="allow-permissions" height="25%" width=45%> <br>
+          The camera recording is optional, you can disable it later. Make sure to maximize your browser window for the screen recording and to not display any private information during the recording session.
+        </li><br>
+        <li>
+          <strong> Follow the steps on the left panel</strong> to complete the tasks: <br><br>
+          <img src="{% static '/img/left_panel.JPG' %}" alt="left panel" style="object-fit: contain;margin-left: 4%;">
+        </li><br>
+<li>If you <strong>do not speak</strong> or remain silent, the following message will be displayed:<br><br>
+ <img src="{% static '/img/notify.JPG' %}" alt="left panel" style="object-fit: contain;margin-left: 4%;width:15%"><br><br></li>
+
+<a class="btn btn-primary" href="{% url 'test_page' 1  %}" role="button" style = "margin-left:1%;margin-bottom:2%;">Continue</a>
+      </ol>
+      
+    </div><br>
+    
+  </div>
+  {% endblock %}
