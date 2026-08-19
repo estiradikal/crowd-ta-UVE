@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'usabilityTest',
     # Dependencias externas
     'crispy_forms',
-    'crispy_bootstrap5',          # <-- NUEVO (reemplaza a crispy_forms con Bootstrap4)
+    'crispy_bootstrap4',          # <-- NUEVO (reemplaza a crispy_forms con Bootstrap4)
     'corsheaders',
     'django_extensions',
     'django_countries',   
@@ -49,7 +49,8 @@ INSTALLED_APPS = [
 
 CORS_ORIGIN_ALLOW_ALL = False
 
-CRISPY_TEMPLATE_PACK = 'bootstrap5'
+CRISPY_TEMPLATE_PACK = 'bootstrap4' # ← cambia de 'bootstrap5' a 'bootstrap4'
+CRISPY_ALLOWED_TEMPLATE_PACKS = ("bootstrap4",)
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', 
@@ -131,9 +132,9 @@ USE_TZ = True
 #TEMPLATE_DEBUG = DEBUG Version de Django 3.0 ya está obsolteta.
 
 
-TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, '/usabilityTest/templates'), 
-)
+#TEMPLATE_DIRS = (
+ #   os.path.join(BASE_DIR, '/usabilityTest/templates'), 
+#)
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
