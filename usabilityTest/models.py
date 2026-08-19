@@ -1,7 +1,7 @@
 from django.db import models
 from django_countries.fields import CountryField
-from languages.fields import LanguageField
-from gsheets import mixins
+#from languages.fields import LanguageField
+#from gsheets import mixins    --> Ya no se usará
 # Create your models here.
 
 
@@ -11,7 +11,7 @@ class SubjectProfile(models.Model):
     gender      = models.CharField(max_length=32)
     birth_country     = CountryField(null=False)
     residence_country = CountryField(null=False)
-    mother_tongue = LanguageField(max_length=32, null=False)
+    mother_tongue = models.CharField(max_length=32, null=False, default="unknown")
     Do_you_speak_English = models.CharField(max_length=32, null=False, default = "none")
     participated_before = models.CharField(max_length=32, null=False)
     knowledge_on_usability = models.CharField(max_length=32, null=False)
@@ -43,10 +43,10 @@ class TasksDescription(models.Model):
     answer = models.CharField(max_length=128, null=True)
 
 
-class TaskStatus(mixins.SheetPushableMixin, models.Model):
+class TaskStatus(models.Model):
 
-    spreadsheet_id = '1ALs2HgtPdT-k0JHq5dzqMcBp5v38j8sj0v_E6lJJ0Ws'
-    model_id_field = 'subject_id'
+    #spreadsheet_id = '1ALs2HgtPdT-k0JHq5dzqMcBp5v38j8sj0v_E6lJJ0Ws'
+    #model_id_field = 'subject_id'
     
     subject_id = models.CharField(max_length=128, primary_key=True, default = "id not saved")
     task_1_valid_question = models.CharField(max_length=32, null=True)
@@ -63,10 +63,10 @@ class Test_Input(models.Model):
     secret_key = models.CharField(max_length=100,  null=True, default = "secret-key")
     application_url = models.CharField(max_length=100,  null=True, default = "url")
 
-class Approved_Testers(mixins.SheetSyncableMixin,models.Model):
-    spreadsheet_id = '1ALs2HgtPdT-k0JHq5dzqMcBp5v38j8sj0v_E6lJJ0Ws'
-    sheet_name = 'Sheet2'
-    model_id_field = 'mw_id'
+class Approved_Testers(models.Model):
+    #spreadsheet_id = '1ALs2HgtPdT-k0JHq5dzqMcBp5v38j8sj0v_E6lJJ0Ws'
+    #sheet_name = 'Sheet2'
+    #model_id_field = 'mw_id'
     mw_id = models.CharField(max_length=128, null=False,primary_key=True, default = "mw-id")
     status = models.CharField(max_length=32, null=True)
     

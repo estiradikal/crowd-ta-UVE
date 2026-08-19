@@ -23,9 +23,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '#####SHOULD_BE_REPLACED#####'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -37,18 +37,22 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Aplicaciones del proyecto
     'usabilityTest',
+    # Dependencias externas
     'crispy_forms',
+    'crispy_bootstrap5',          # <-- NUEVO (reemplaza a crispy_forms con Bootstrap4)
     'corsheaders',
-    'gsheets',
-    'django_extensions'
+    'django_extensions',
+    'django_countries',   
 ]
 
 CORS_ORIGIN_ALLOW_ALL = False
 
-CRISPY_TEMPLATE_PACK = 'bootstrap4'
+CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -60,10 +64,6 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'ta_crowdsource.urls'
 
-
-GSHEETS = {
-    'CLIENT_SECRETS': '#####SHOULD_BE_REPLACED#####'
-}
 
 TEMPLATES = [
     {
@@ -89,8 +89,8 @@ WSGI_APPLICATION = 'ta_crowdsource.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': '',
-        'NAME': '',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
@@ -123,12 +123,12 @@ TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
-USE_L10N = True
+#USE_L10N = True  Obsoleto
 
 USE_TZ = True
 
 
-TEMPLATE_DEBUG = DEBUG
+#TEMPLATE_DEBUG = DEBUG Version de Django 3.0 ya está obsolteta.
 
 
 TEMPLATE_DIRS = (
@@ -138,8 +138,18 @@ TEMPLATE_DIRS = (
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATIC_ROOT = '/var/www/ta_crowdsource/staticfiles/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
-        '/var/www/static/',
+    os.path.join(BASE_DIR, 'static'),
 ]
+
+# Template directories
+TEMPLATE_DIRS = (
+    os.path.join(BASE_DIR, 'usabilityTest', 'templates'),
+)
+
+# Configuración de CORS para desarrollo
+CORS_ALLOW_ALL_ORIGINS = True   # Solo para desarrollo
+CORS_ALLOW_CREDENTIALS = True

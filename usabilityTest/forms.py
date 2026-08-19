@@ -1,7 +1,7 @@
 from django import forms
 from .models import SubjectProfile
 from django_countries.fields import CountryField
-from languages.fields import LanguageField
+#from languages.fields import LanguageField
 
 GENDER_CHOICES = (
     ('',''),
@@ -22,7 +22,7 @@ class SubjectProfileForm(forms.ModelForm):
     gender      = forms.ChoiceField(required=True,choices=(GENDER_CHOICES), initial=None)
     birth_country     = CountryField()
     residence_country = CountryField()
-    mother_tongue = LanguageField()
+    mother_tongue = forms.CharField(max_length=32, required=True, label="Mother Tongue")
     Do_you_speak_English = forms.ChoiceField(required=True,choices=(TRUE_FALSE_CHOICES), initial=None,label="Do you speak English?")
     knowledge_on_usability = forms.ChoiceField(required=True,choices=TRUE_FALSE_CHOICES, initial=None,label="Do you have any knowledge on usability testing?")
     participated_before = forms.ChoiceField(required=True,initial=None, choices=TRUE_FALSE_CHOICES,label="Have you participated before in a usability test?")
