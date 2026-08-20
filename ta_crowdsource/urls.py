@@ -21,8 +21,11 @@ from django.shortcuts import redirect
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', lambda request: redirect('/index/?workerId=test&campId=test')),  # Redirección a la pág
-    path("", include("usabilityTest.urls")),
-   # path('', include('gsheets.urls')),
+    path('', lambda request: redirect('/index/')),  # Redirige la raíz a /index/
+    path('', include('usabilityTest.urls')),       # Incluye las rutas de la app
+    # path('', include('gsheets.urls')),           # Comentado porque ya no se usa
+]
 
-]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+# Servir archivos estáticos en desarrollo
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
