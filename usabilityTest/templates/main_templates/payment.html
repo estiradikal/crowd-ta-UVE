@@ -1,0 +1,51 @@
+{% extends "main_templates/base.html" %}
+{% load static %}
+{% block custom_styles %}
+<link rel="stylesheet" href="{% static '/css/stepper.css' %}">
+{% endblock %}
+{% block page_content %}
+
+<div class="col-4">
+  
+    <div class="prev-task">
+      {%if tasks|add:"0" > 1 %}
+      {% for i in "x"|rjust:tasks|add:"0" %}
+      {%if forloop.counter <= tasks|add:"0" %}
+      <div class="step step-done">
+        <div>
+          <div class="circle"> {{forloop.counter }}</div>
+        </div>
+        <div>
+          <div class="title">Task {{forloop.counter }} <i class="fa fa-check-circle-o" aria-hidden="true"></i></div>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+      {% endif%}
+    </div>
+    <div class="step step-done">
+      <div>
+        <div class="circle">&check;</div>
+      </div>
+      <div>
+        <div class="title">Pament Id</div>
+      </div>
+    </div>
+</div>
+<div class="col-6 container" style="top: 50;">
+  <label><strong>Payment Id</strong> </label>
+  <div class="input-group mb-3">
+    <input type="text" class="form-control" value="{{ payId }}" id="payId" readonly aria-label="Payment Id">
+    <div class="input-group-append">
+      <button class="btn btn-outline-secondary" data-toggle="tooltip" data-placement="top" title="Copy to Clipboard"
+        type="button" id="button-copy">
+        <i class="fa fa-clipboard" aria-hidden="true"></i></button>
+    </div>
+  </div>
+  <p><small>Important! Save the Payment Id for future reference</small></p>
+</div>
+{% endblock %}
+
+{% block custom_scripts %}
+<script src="{% static '/js/payment.js' %}"></script>
+{% endblock %}
