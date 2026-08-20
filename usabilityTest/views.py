@@ -54,35 +54,43 @@ def main_page(request, task_id):
         raise PermissionDenied
 
 def tasks_info_page(request):
-    if request.session.get('payid'):
-        payid = request.session['payid']
-        exists = SubjectProfile.objects.filter(payment_id=payid).count()
-        test_status = TaskStatus.objects.filter(subject_id=payid).count()
-        if not test_status > 0:
-            TaskStatus.objects.create(subject_id=payid)
-        if not exists > 0:
-            if request.method == 'POST':
-                form = SubjectProfileForm(request.POST or None)
-                if form.is_valid():
-                    form_up = form.save(commit=False)
-                    form_up.workerId = request.session.get('workerId', '0')
-                    form_up.groupId = request.session.get('groupId', '0')
-                    form_up.payment_id = payid
-                    form_up.save()
-                    # Redirigir a microtasks después de guardar
-                    return render(request, 'main_templates/microtasks.html', {})
-                else:
-                    # Si el formulario no es válido, volver a mostrar con errores
-                    return render(request, 'main_templates/user_registration.html', {'form': form})
-            else:
-                # GET: mostrar formulario vacío
-                form = SubjectProfileForm()
-                return render(request, 'main_templates/user_registration.html', {'form': form})
-        else:
-            # Si ya existe, ir a microtasks
-            return render(request, 'main_templates/microtasks.html', {})
-    else:
+    # Verificar que la sesión tenga payid
+    payid = request.session.get('payid')
+    if not payid:
         raise Http404("Please register first to take the test")
+
+    # Verificar si el perfil ya existe
+    profile_exists = SubjectProfile.objects.filter(payment_id=payid).exists()
+    
+    # Crear registro de TaskStatus si no existe
+    task_status_exists = TaskStatus.objects.filter(subject_id=payid).exists()
+    if not task_status_exists:
+        TaskStatus.objects.create(subject_id=payid)
+
+    # Si el perfil ya existe, ir a microtasks
+    if profile_exists:
+        return render(request, 'main_templates/microtasks.html', {})
+
+    # Si el perfil no existe, procesar formulario
+    if request.method == 'POST':
+        form = SubjectProfileForm(request.POST or None)
+        if form.is_valid():
+            # Guardar sin commit para agregar campos de sesión
+            profile = form.save(commit=False)
+            profile.workerId = request.session.get('workerId', '0')
+            profile.campId = request.session.get('campId', '0')
+            profile.groupId = request.session.get('groupId', '0')
+            profile.payment_id = payid
+            profile.save()
+            # Redirigir a microtasks después del registro exitoso
+            return render(request, 'main_templates/microtasks.html', {})
+        else:
+            # Si el formulario no es válido, mostrar errores
+            return render(request, 'main_templates/user_registration.html', {'form': form})
+    else:
+        # GET: mostrar formulario vacío
+        form = SubjectProfileForm()
+        return render(request, 'main_templates/user_registration.html', {'form': form})
 
 def update_task_answers(request):
     if request.method != 'POST':
@@ -128,39 +136,53 @@ def update_clicks(request):
         ClickInfo.objects.filter(test_id=testid, task_id=taskid).update(click_info=new_info)
     return JsonResponse({'success': 'Click info stored successfully'})
 
-
 def ins_page(request):
-    # --- Obtener parámetros de la URL ---
+    # Si la URL ya tiene parámetros, usarlos, sino generarlos
     worker_id = request.GET.get('workerId')
     camp_id = request.GET.get('campId')
     group_id = request.GET.get('groupId')
 
-    # --- Asignar valores por defecto solo si NO vinieron en la URL ---
-    if not worker_id:
-        worker_id = '1'
-    if not camp_id:
-        camp_id = '1'
-    if not group_id:
-        group_id = '1'
+    # Si NO hay parámetros, generamos nuevos valores
+    if not (worker_id and camp_id and group_id):
+        # Generar workerId, campId, groupId como antes
+        last_worker = SubjectProfile.objects.order_by('-workerId').first()
+        if last_worker and last_worker.workerId:
+            try:
+                next_worker = int(last_worker.workerId) + 1
+            except:
+                next_worker = 1
+        else:
+            next_worker = 1
 
-    # --- Guardar en sesión ---
+        last_camp = SubjectProfile.objects.order_by('-campId').first()
+        if last_camp and last_camp.campId:
+            try:
+                next_camp = int(last_camp.campId) + 1
+            except:
+                next_camp = 1
+        else:
+            next_camp = 1
+
+        group_id = '1'
+        worker_id = str(next_worker)
+        camp_id = str(next_camp)
+
+        # Redirigir a la misma URL pero con los parámetros
+        return redirect(f'/index/?groupId={group_id}&campId={camp_id}&workerId={worker_id}')
+
+    # Si la URL YA tiene parámetros, usarlos (sin redirigir)
+    # Guardar en sesión
     request.session['workerId'] = worker_id
     request.session['campId'] = camp_id
     request.session['groupId'] = group_id
 
-    # --- Generar payment_id ---
+    # Generar payment_id (si no existe o si es nuevo)
     secret_key = "#####SHOULD_BE_REPLACED#####"
     payId = hashlib.sha256((camp_id + worker_id + secret_key).encode('utf-8')).hexdigest()
     payId = "mw-" + payId
     request.session['payid'] = payId
 
-    # --- Verificar si los parámetros YA estaban en la URL ---
-    # Si NO vinieron en la URL (es decir, los hemos generado ahora), redirigimos.
-    if not request.GET.get('workerId') and not request.GET.get('campId') and not request.GET.get('groupId'):
-        # Redirigir a la misma página pero con los parámetros generados
-        return redirect(f'/index/?groupId={group_id}&campId={camp_id}&workerId={worker_id}')
-
-    # Si vinieron en la URL, mostramos la página normal.
+    # Mostrar la página de instrucciones (sin redirigir)
     context = {
         'workerId': worker_id,
         'campId': camp_id,
@@ -168,7 +190,6 @@ def ins_page(request):
         'payId': payId
     }
     return render(request, 'main_templates/instructions.html', context)
-
 
 def payment_id(request):
     if request.session.get('payid'):

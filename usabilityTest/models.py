@@ -16,8 +16,10 @@ class SubjectProfile(models.Model):
     
     # Campos renombrados y nuevo
     workerId = models.CharField(max_length=32, null=False, default="0")
+    campId = models.CharField(max_length=32, null=False, default="0")
     groupId = models.CharField(max_length=32, null=True, blank=True)
     test_status = models.CharField(max_length=32, default="active")
+    campId = models.CharField(max_length=32, null=True, blank=True)
 
     def __str__(self):
         return self.payment_id
