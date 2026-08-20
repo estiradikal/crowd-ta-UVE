@@ -1,14 +1,81 @@
 {% extends "main_templates/base.html" %}
 {% load static %}
+
+{% block custom_styles %}
+<style>
+  /* Contenedor ocupa todo el ancho y sin margen superior excesivo */
+  .container {
+    max-width: 100% !important;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 10px !important;
+    margin-top: 0 !important;
+  }
+
+  /* Título sin margen superior */
+  h2 {
+    margin-top: 0 !important;
+    padding-top: 5px;
+  }
+
+  /* Iframe ocupa todo el ancho y 65% de altura (para que el botón sea visible) */
+  iframe {
+    width: 100% !important;
+    height: 65vh !important;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  /* Caja de IDs más compacta */
+  .info-box {
+    background-color: #f8f9fa;
+    padding: 12px 20px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border-left: 4px solid #007bff;
+  }
+
+  .info-box p {
+    margin: 3px 0;
+    font-size: 1.1rem;
+  }
+
+  .info-box strong {
+    display: inline-block;
+    min-width: 120px;
+  }
+
+  .btn-primary {
+    margin-top: 15px;
+    padding: 10px 30px;
+    font-size: 1.1rem;
+  }
+
+  /* Asegurar que el botón no quede oculto */
+  .text-center {
+    margin-bottom: 20px;
+  }
+</style>
+{% endblock %}
+
 {% block page_content %}
 <div class="container">
-  <h2>General Instructions</h2>
-  
-  <p><strong>Group ID:</strong> {{ groupId }}</p>
-  <p><strong>Campaign ID:</strong> {{ campId }}</p>
-  <p><strong>Worker ID:</strong> {{ workerId }}</p>
-  
-  <iframe src="https://docs.google.com/document/d/e/2PACX-1vT0-hQ-uLyiNucMANjnicGlXq69n8MJ6oL0K3nM2xf3qTLQEtQcq62dxAxbmQSQIeC31VqA9eHk3SCt/pub?embedded=true" width="100%"></iframe>
-  <a class="btn btn-primary" style="margin-bottom:10%;" href="{% url 'user_registration' %}" role="button">Next</a>
+  <h2 class="mb-3">General Instructions</h2>
+
+  <!-- Cuadro con los IDs -->
+  <div class="info-box">
+    <p><strong>Group ID:</strong> {{ groupId }}</p>
+    <p><strong>Campaign ID:</strong> {{ campId }}</p>
+    <p><strong>Worker ID:</strong> {{ workerId }}</p>
+  </div>
+
+  <!-- Iframe del documento de instrucciones -->
+  <iframe src="https://docs.google.com/document/d/e/2PACX-1vT0-hQ-uLyiNucMANjnicGlXq69n8MJ6oL0K3nM2xf3qTLQEtQcq62dxAxbmQSQIeC31VqA9eHk3SCt/pub?embedded=true" 
+          frameborder="0"></iframe>
+
+  <!-- Botón Next (siempre visible) -->
+  <div class="text-center">
+    <a class="btn btn-primary" href="{% url 'user_registration' %}" role="button">Next</a>
+  </div>
 </div>
 {% endblock %}

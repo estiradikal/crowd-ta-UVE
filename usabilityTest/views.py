@@ -130,23 +130,37 @@ def update_clicks(request):
 
 
 def ins_page(request):
-    # --- Asignar valores por defecto (puedes cambiarlos después) ---
-    worker_id = request.GET.get('workerId', '1')
-    camp_id = request.GET.get('campId', '1')
-    group_id = request.GET.get('groupId', '1')
-    
-    # Guardar en sesión
+    # --- Obtener parámetros de la URL ---
+    worker_id = request.GET.get('workerId')
+    camp_id = request.GET.get('campId')
+    group_id = request.GET.get('groupId')
+
+    # --- Asignar valores por defecto solo si NO vinieron en la URL ---
+    if not worker_id:
+        worker_id = '1'
+    if not camp_id:
+        camp_id = '1'
+    if not group_id:
+        group_id = '1'
+
+    # --- Guardar en sesión ---
     request.session['workerId'] = worker_id
     request.session['campId'] = camp_id
     request.session['groupId'] = group_id
-    
-    # Generar payment_id (siempre el mismo para estos valores)
+
+    # --- Generar payment_id ---
     secret_key = "#####SHOULD_BE_REPLACED#####"
     payId = hashlib.sha256((camp_id + worker_id + secret_key).encode('utf-8')).hexdigest()
     payId = "mw-" + payId
     request.session['payid'] = payId
-    
-    # --- Renderizar la plantilla con un diccionario de contexto ---
+
+    # --- Verificar si los parámetros YA estaban en la URL ---
+    # Si NO vinieron en la URL (es decir, los hemos generado ahora), redirigimos.
+    if not request.GET.get('workerId') and not request.GET.get('campId') and not request.GET.get('groupId'):
+        # Redirigir a la misma página pero con los parámetros generados
+        return redirect(f'/index/?groupId={group_id}&campId={camp_id}&workerId={worker_id}')
+
+    # Si vinieron en la URL, mostramos la página normal.
     context = {
         'workerId': worker_id,
         'campId': camp_id,
