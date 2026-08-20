@@ -162,19 +162,33 @@
       </div>
     </div>
     <div class="col-9 cam-left" id="ifr-dsp" style="display: none;">
-      <iframe src="https://www.edx.org/" id="iframe"></iframe>
+  <!-- Enlace clickeable que abre EDX en nueva pestaña -->
+  <a href="https://www.edx.org/" target="_blank" 
+     style="display: block; width: 100%; height: 100%; min-height: 500px; 
+            background: #f0f0f0; border: 1px solid #ccc; border-radius: 4px;
+            text-decoration: none; color: inherit; position: relative; 
+            overflow: hidden;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                text-align: center; pointer-events: none; width: 80%;">
+      <i class="fa fa-external-link" style="font-size: 3rem; color: #007bff; display: block; margin-bottom: 15px;"></i>
+      <span style="font-size: 1.2rem; color: #333; font-weight: bold;">Haz clic para abrir EDX</span>
+      <p style="font-size: 0.9rem; color: #666; margin-top: 10px;">
+        La plataforma se abrirá en una nueva pestaña.<br>
+        Asegúrate de mantenerla visible mientras realizas la tarea.
+      </p>
+    </div>
+    <!-- Fondo sutil -->
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: #007bff;"></div>
+  </a>
 
-      <div class="recorded-output" data-id="review" style="display: none;">
-
-        <div class="wrapper">
-          <strong>
-            <h5>Session Review</h5>
-          </strong> <br>
-          <video class="video" id="recorded" data-id="review" width="220" height="220" webkit-playsinline controls></video>
-          <div class="playpause"></div>
-          </div>
-        </div>
-      </div>
+  <div class="recorded-output" data-id="review" style="display: none;">
+    <div class="wrapper">
+      <strong><h5>Session Review</h5></strong><br>
+      <video class="video" id="recorded" data-id="review" width="220" height="220" webkit-playsinline controls></video>
+      <div class="playpause"></div>
+    </div>
+  </div>
+</div>
     </div>
   </div>
 </div>
