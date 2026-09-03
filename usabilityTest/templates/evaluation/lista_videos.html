@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Evaluación</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; }
+        .status-pendiente { background: #e0e0e0; color: #555; }
+        .status-progreso { background: #fff3cd; color: #856404; }
+        .status-completada { background: #d4edda; color: #155724; }
+        .copy-btn { cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <div class="row mb-4">
+            <div class="col">
+                <h2>Panel de Evaluación de Usabilidad</h2>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">Total Videos</h5>
+                        <h2>{{ stats.total }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center border-success">
+                    <div class="card-body">
+                        <h5 class="card-title text-success">Evaluados</h5>
+                        <h2 class="text-success">{{ stats.evaluados }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center border-warning">
+                    <div class="card-body">
+                        <h5 class="card-title text-warning">Pendientes</h5>
+                        <h2 class="text-warning">{{ stats.pendientes }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="btn-group">
+                    <a href="?filtro=todos" class="btn btn-outline-secondary {% if filtro == 'todos' %}active{% endif %}">Todos</a>
+                    <a href="?filtro=pendientes" class="btn btn-outline-secondary {% if filtro == 'pendientes' %}active{% endif %}">Pendientes</a>
+                    <a href="?filtro=en_progreso" class="btn btn-outline-secondary {% if filtro == 'en_progreso' %}active{% endif %}">En Progreso</a>
+                    <a href="?filtro=completadas" class="btn btn-outline-secondary {% if filtro == 'completadas' %}active{% endif %}">Completadas</a>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <form class="form-inline justify-content-end">
+                    <input type="text" name="q" class="form-control mr-2" placeholder="Buscar por Worker ID..." value="{{ busqueda }}">
+                    <input type="hidden" name="filtro" value="{{ filtro }}">
+                    <button type="submit" class="btn btn-primary">Buscar</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <table class="table table-striped table-hover">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Worker ID</th>
+                            <th>Task ID</th>
+                            <th>Fecha</th>
+                            <th>Archivo</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for video in videos %}
+                        <tr>
+                            <td>
+                                {{ video.payment_id }}
+                                <button class="btn btn-sm btn-outline-secondary copy-btn ml-2" onclick="navigator.clipboard.writeText('{{ video.payment_id }}')">Copiar</button>
+                            </td>
+                            <td>{{ video.task_id }}</td>
+                            <td>{{ video.date }}</td>
+                            <td>{{ video.filename }}</td>
+                            <td>
+                                {% if video.evaluada %}
+                                    <span class="status-badge status-completada">Completada</span>
+                                {% elif video.en_progreso %}
+                                    <span class="status-badge status-progreso">En Progreso</span>
+                                {% else %}
+                                    <span class="status-badge status-pendiente">Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="/evaluacion/{{ video.payment_id }}/{{ video.task_id }}/" class="btn btn-sm btn-primary">Evaluar</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No hay videos disponibles</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

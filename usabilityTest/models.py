@@ -68,3 +68,17 @@ class Test_Input(models.Model):
 class Approved_Testers(models.Model):
     workerId = models.CharField(max_length=128, null=False, primary_key=True, default="0")
     status = models.CharField(max_length=32, null=True)
+
+
+class Evaluacion(models.Model):
+    video_id = models.CharField(max_length=256)
+    payment_id = models.CharField(max_length=256)
+    task_id = models.CharField(max_length=32)
+    completada = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Evaluacion"
+        verbose_name_plural = "Evaluaciones"
+
+    def __str__(self):
+        return f"{self.payment_id} - Task {self.task_id}"
