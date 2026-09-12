@@ -137,52 +137,34 @@ def update_clicks(request):
     return JsonResponse({'success': 'Click info stored successfully'})
 
 def ins_page(request):
-    # Si la URL ya tiene parámetros, usarlos, sino generarlos
+    # Valores por defecto fijos cuando no vienen en la URL
+    DEFAULT_WORKER = 'DEMO2'
+    DEFAULT_CAMP = 'demo'
+    DEFAULT_GROUP = '1'
+
+    # Obtener parámetros de la URL
     worker_id = request.GET.get('workerId')
     camp_id = request.GET.get('campId')
     group_id = request.GET.get('groupId')
 
-    # Si NO hay parámetros, generamos nuevos valores
+    # Si falta alguno, redirigir con los valores por defecto fijos
     if not (worker_id and camp_id and group_id):
-        # Generar workerId, campId, groupId como antes
-        last_worker = SubjectProfile.objects.order_by('-workerId').first()
-        if last_worker and last_worker.workerId:
-            try:
-                next_worker = int(last_worker.workerId) + 1
-            except:
-                next_worker = 1
-        else:
-            next_worker = 1
+        return redirect(
+            f'/index/?groupId={DEFAULT_GROUP}&campId={DEFAULT_CAMP}&workerId={DEFAULT_WORKER}'
+        )
 
-        last_camp = SubjectProfile.objects.order_by('-campId').first()
-        if last_camp and last_camp.campId:
-            try:
-                next_camp = int(last_camp.campId) + 1
-            except:
-                next_camp = 1
-        else:
-            next_camp = 1
-
-        group_id = '1'
-        worker_id = str(next_worker)
-        camp_id = str(next_camp)
-
-        # Redirigir a la misma URL pero con los parámetros
-        return redirect(f'/index/?groupId={group_id}&campId={camp_id}&workerId={worker_id}')
-
-    # Si la URL YA tiene parámetros, usarlos (sin redirigir)
     # Guardar en sesión
     request.session['workerId'] = worker_id
     request.session['campId'] = camp_id
     request.session['groupId'] = group_id
 
-    # Generar payment_id (si no existe o si es nuevo)
+    # Generar payment_id
     secret_key = "#####SHOULD_BE_REPLACED#####"
     payId = hashlib.sha256((camp_id + worker_id + secret_key).encode('utf-8')).hexdigest()
     payId = "mw-" + payId
     request.session['payid'] = payId
 
-    # Mostrar la página de instrucciones (sin redirigir)
+    # Renderizar página de instrucciones
     context = {
         'workerId': worker_id,
         'campId': camp_id,
@@ -227,7 +209,6 @@ def upload_media(request):
         return JsonResponse({'failure': 'Session expired'}, status=403)
     
     # Adaptar ruta para Windows (o usar una carpeta local)
-    # En lugar de /home/rgalda/..., usamos una carpeta dentro del proyecto
     base_upload_dir = os.path.join(os.path.dirname(__file__), 'uploads')
     folder = os.path.join(base_upload_dir, payId, taskid, str(date.today()))
     if not os.path.exists(folder):
@@ -236,7 +217,6 @@ def upload_media(request):
     fs = FileSystemStorage(location=folder)
     filename = f'_{payId}.webm'
     filename = fs.save(filename, myfile)
-    # file_url = fs.url(filename)  # No necesario para JsonResponse
     return JsonResponse({'success': 'Media uploaded successfully'})
 
 def Update_Test_Status(request):
@@ -257,7 +237,7 @@ def Update_Test_Status(request):
             task_score = 0
 
         # Obtener respuestas esperadas
-        valid_answers = get_task_answers(taskId)  # devuelve lista
+        valid_answers = get_task_answers(taskId)
 
         if taskId == "1":
             task_status = "True" if task_answer in valid_answers else "False"
