@@ -1,36 +1,84 @@
 {% extends "main_templates/base.html" %}
 {% load static %}
-{% block page_content %}
 
+{% block custom_styles %}
+<style>
+  .video-container {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    margin: 20px auto;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  .instructions-img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 10px 0;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+  }
+</style>
+{% endblock %}
+
+{% block page_content %}
 <body>
   <div class="container">
-    <h3>Part 2:  Training session</h3>
+    <h3>Part 2: Training session</h3>
 
-
-    <!-- Wrapper for slides -->
     <div class="item active">
       <p>
-      The following video <strong>shows what we are expecting</strong> from you:
-    </p>
-      <iframe src="https://www.youtube.com/embed/5lcu3ig7IX4" width="50%" height="400" frameborder="0"
-        allow="autoplay; encrypted-media" allowfullscreen></iframe><br><br>
+        The following video <strong>shows what we are expecting</strong> from you:
+      </p>
+
+      <!-- Video de YouTube embebido, se reproduce en la misma página -->
+      <div class="video-container">
+        <iframe 
+            src="https://www.youtube.com/embed/5lcu3ig7IX4?rel=0&modestbranding=1" 
+            title="Training Session Video"
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen>
+        </iframe>
+      </div>
+
+      <br>
+
       <h5><strong>Important</strong></h5>
       <ol>
-        <li>To start the task, you should <strong>allow permissions for Screen Share, Mic, and Camera</strong> as shown below: <br><br>
-          <img src="{% static '/img/permissions.jpg' %}" alt="allow-permissions" height="25%" width=45%> <br>
-          The camera recording is optional, you can disable it later. Make sure to maximize your browser window for the screen recording and to not display any private information during the recording session.
-        </li><br>
         <li>
-          <strong> Follow the steps on the left panel</strong> to complete the tasks: <br><br>
-          <img src="{% static '/img/left_panel.JPG' %}" alt="left panel" style="object-fit: contain;margin-left: 4%;">
-        </li><br>
-<li>If you <strong>do not speak</strong> or remain silent, the following message will be displayed:<br><br>
- <img src="{% static '/img/notify.JPG' %}" alt="left panel" style="object-fit: contain;margin-left: 4%;width:15%"><br><br></li>
-
-<a class="btn btn-primary" href="{% url 'test_page' 1  %}" role="button" style = "margin-left:1%;margin-bottom:2%;">Continue</a>
+          To start the task, you should <strong>allow permissions for Screen Share, Mic, and Camera</strong> as shown below: <br><br>
+          <img src="{% static '/img/permissions.jpg' %}" alt="allow-permissions" class="instructions-img" style="max-width: 60%;">
+          <br>
+          The camera recording is optional, you can disable it later. Make sure to maximize your browser window for the screen recording and to not display any private information during the recording session.
+        </li>
+        <br>
+        <li>
+          <strong>Follow the steps on the left panel</strong> to complete the tasks: <br><br>
+          <img src="{% static '/img/left_panel.JPG' %}" alt="left panel" class="instructions-img" style="max-width: 60%;">
+        </li>
+        <br>
+        <li>
+          If you <strong>do not speak</strong> or remain silent, the following message will be displayed:<br><br>
+          <img src="{% static '/img/notify.JPG' %}" alt="notification" class="instructions-img" style="width: 15%;"><br><br>
+        </li>
       </ol>
-      
-    </div><br>
-    
+
+      <a class="btn btn-primary" href="{% url 'test_page' 1 %}" role="button" style="margin-left:1%; margin-bottom:2%;">Continue</a>
+    </div>
+    <br>
   </div>
-  {% endblock %}
+{% endblock %}
