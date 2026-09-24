@@ -1,0 +1,64 @@
+{% extends "evaluation/base_admin.html" %}
+
+{% block title %}Evaluation Guide - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Evaluation Guide</h2>
+    <p class="text-muted">Methodological guide for evaluators.</p>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h4>1. How to evaluate a video</h4>
+            <ol>
+                <li>Go to <strong>Videos</strong> in the sidebar.</li>
+                <li>Find the video you want to evaluate and click <strong>Evaluate</strong>.</li>
+                <li>Watch the video and use the <strong>Mark Start</strong> / <strong>Mark End</strong> buttons to capture timestamps.</li>
+                <li>Fill in the annotation form: indicator, task context, problem description and comments.</li>
+                <li>Click <strong>Save Annotation</strong>.</li>
+                <li>If you identify a general usability problem, fill in the <strong>Register Problem</strong> form.</li>
+                <li>When finished, click <strong>Mark as evaluated</strong>.</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h4>2. Indicators (Event Codes)</h4>
+            <table class="table table-sm">
+                <thead><tr><th>Code</th><th>Name</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td>ACT</td><td>Wrong action</td><td>Action that does not belong to the correct sequence</td></tr>
+                    <tr><td>DISC</td><td>Discontinues action</td><td>User points to a function but does not execute it</td></tr>
+                    <tr><td>EXE</td><td>Execution problem</td><td>Incorrectly executed action</td></tr>
+                    <tr><td>REP</td><td>Repeated action</td><td>Repeated action with the same effect</td></tr>
+                    <tr><td>CORR</td><td>Corrective action</td><td>Corrected action with a subsequent one</td></tr>
+                    <tr><td>STOP</td><td>Task stopped</td><td>Starts new task without finishing current one</td></tr>
+                    <tr><td>GOAL</td><td>Wrong goal</td><td>Formulates an unachievable objective</td></tr>
+                    <tr><td>PUZZ</td><td>Puzzled</td><td>Doesn't know how to perform the task</td></tr>
+                    <tr><td>RAND</td><td>Random actions</td><td>Randomly chosen actions</td></tr>
+                    <tr><td>SEARCH</td><td>Searches for function</td><td>Cannot locate a specific function</td></tr>
+                    <tr><td>DIFF</td><td>Execution difficulty</td><td>Physical difficulty executing</td></tr>
+                    <tr><td>DSF</td><td>Doubt/surprise/frustration</td><td>Unsure if action was correct</td></tr>
+                    <tr><td>REC</td><td>Recognition of error</td><td>Recognizes a previous error</td></tr>
+                    <tr><td>QUIT</td><td>Quits task</td><td>Recognizes task was not completed</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h4>3. Severity Levels</h4>
+            <table class="table table-sm">
+                <thead><tr><th>Level</th><th>Slowed Down</th><th>Understanding</th><th>Frustration</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Critical</strong></td><td>Hindered</td><td>Doesn't understand how to use the info</td><td>---</td></tr>
+                    <tr><td><strong>Serious</strong></td><td>Delayed several seconds</td><td>Doesn't understand a functionality</td><td>Clearly upset</td></tr>
+                    <tr><td><strong>Cosmetic</strong></td><td>Delayed a few seconds</td><td>Performs actions without explaining why</td><td>---</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

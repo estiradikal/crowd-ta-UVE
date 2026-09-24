@@ -1,0 +1,71 @@
+{% extends "evaluation/base_admin.html" %}
+
+{% block title %}Reports - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Reports</h2>
+    <p class="text-muted">Evaluation reports and statistics.</p>
+
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Total Videos</h5>
+                    <h2>{{ total_videos }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h5 class="card-title text-success">Evaluations Completed</h5>
+                    <h2 class="text-success">{{ total_evaluaciones }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <h5 class="card-title text-info">Total Annotations</h5>
+                    <h2 class="text-info">{{ total_anotaciones }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">Problems Found</h5>
+                    <h2 class="text-danger">{{ total_problemas }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4 class="mt-5">Completed Evaluations</h4>
+    <table class="table table-striped table-hover mt-3">
+        <thead class="thead-dark">
+            <tr>
+                <th>Worker ID</th>
+                <th>Task</th>
+                <th>Video</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ev in evaluaciones %}
+            <tr>
+                <td>{{ ev.payment_id }}</td>
+                <td>{{ ev.task_id }}</td>
+                <td>{{ ev.video_id }}</td>
+                <td><span class="badge badge-success">Completed</span></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center text-muted">No evaluations completed yet</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

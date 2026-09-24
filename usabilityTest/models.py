@@ -75,6 +75,10 @@ class Evaluacion(models.Model):
     payment_id = models.CharField(max_length=256)
     task_id = models.CharField(max_length=32)
     completada = models.BooleanField(default=False)
+    evaluador = models.CharField(max_length=128, null=True, blank=True, default="")
+    fecha_inicio = models.DateTimeField(null=True, blank=True)
+    fecha_fin = models.DateTimeField(null=True, blank=True)
+    observaciones_generales = models.TextField(blank=True, default="")
 
     class Meta:
         verbose_name = "Evaluacion"
@@ -82,3 +86,37 @@ class Evaluacion(models.Model):
 
     def __str__(self):
         return f"{self.payment_id} - Task {self.task_id}"
+
+
+class Anotacion(models.Model):
+    evaluacion = models.ForeignKey(Evaluacion, on_delete=models.CASCADE, related_name='anotaciones')
+    start_time = models.CharField(max_length=16)
+    finish_time = models.CharField(max_length=16)
+    indicador = models.CharField(max_length=16)
+    contexto = models.CharField(max_length=64)
+    problema = models.TextField(blank=True, default="")
+    comentarios = models.TextField(blank=True, default="")
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Anotacion"
+        verbose_name_plural = "Anotaciones"
+
+    def __str__(self):
+        return f"{self.indicador} ({self.start_time} - {self.finish_time})"
+
+
+class ProblemaIdentificado(models.Model):
+    evaluacion = models.ForeignKey(Evaluacion, on_delete=models.CASCADE, related_name='problemas')
+    descripcion = models.TextField()
+    severidad = models.CharField(max_length=32)
+    tipo = models.CharField(max_length=32)
+    comentarios = models.TextField(blank=True, default="")
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Problema Identificado"
+        verbose_name_plural = "Problemas Identificados"
+
+    def __str__(self):
+        return f"{self.severidad} - {self.descripcion[:50]}"

@@ -1,0 +1,111 @@
+{% extends "evaluation/base_admin.html" %}
+
+{% block title %}Dashboard - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Dashboard</h2>
+    <p class="text-muted">Welcome to the administration panel</p>
+
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <a href="/admin-panel/videos/" class="text-decoration-none">
+                <div class="card text-center border-primary">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary"><i class="fas fa-video"></i> Total Videos</h5>
+                        <h2 class="text-primary">{{ stats.total }}</h2>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/admin-panel/videos/?filtro=completadas" class="text-decoration-none">
+                <div class="card text-center border-success">
+                    <div class="card-body">
+                        <h5 class="card-title text-success"><i class="fas fa-check-circle"></i> Evaluated</h5>
+                        <h2 class="text-success">{{ stats.evaluados }}</h2>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/admin-panel/videos/?filtro=pendientes" class="text-decoration-none">
+                <div class="card text-center border-warning">
+                    <div class="card-body">
+                        <h5 class="card-title text-warning"><i class="fas fa-clock"></i> Pending</h5>
+                        <h2 class="text-warning">{{ stats.pendientes }}</h2>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/admin-panel/campanas/" class="text-decoration-none">
+                <div class="card text-center border-info">
+                    <div class="card-body">
+                        <h5 class="card-title text-info"><i class="fas fa-clipboard-list"></i> Campaigns</h5>
+                        <h2 class="text-info">{{ stats.campanas }}</h2>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-clock"></i> Recent Evaluations
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Worker ID</th>
+                                <th>Task</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ev in evaluaciones_recientes %}
+                            <tr>
+                                <td>{{ ev.payment_id }}</td>
+                                <td>{{ ev.task_id }}</td>
+                                <td>
+                                    {% if ev.completada %}
+                                        <span class="badge badge-success">Completed</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">In Progress</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">No evaluations yet</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-bolt"></i> Quick Actions
+                </div>
+                <div class="card-body">
+                    <a href="/admin-panel/videos/" class="btn btn-primary btn-block mb-2">
+                        <i class="fas fa-video"></i> View Videos
+                    </a>
+                    <a href="/admin-panel/reportes/" class="btn btn-outline-primary btn-block mb-2">
+                        <i class="fas fa-chart-line"></i> View Reports
+                    </a>
+                    <a href="/admin-panel/guia/" class="btn btn-outline-secondary btn-block">
+                        <i class="fas fa-book"></i> Evaluation Guide
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
