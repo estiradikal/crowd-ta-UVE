@@ -3,7 +3,34 @@ from django_countries.fields import CountryField
 #from languages.fields import LanguageField
 #from gsheets import mixins    --> Ya no se usará
 
-class SubjectProfile(models.Model):
+
+class MarkdownModel(models.Model):
+    markdown = models.TextField(null=True, blank=True, default="")
+    MARKDOWN_FIELDS = ()
+
+    class Meta:
+        abstract = True
+
+    def to_markdown(self):
+        lines = ["| Campo | Valor |", "| --- | --- |"]
+        for name in self.MARKDOWN_FIELDS:
+            lines.append("| %s | %s |" % (name, md_value(getattr(self, name))))
+        return "\n".join(lines)
+
+    def save(self, *args, **kwargs):
+        self.markdown = self.to_markdown()
+        super().save(*args, **kwargs)
+
+
+def md_value(value):
+    if value is None:
+        return ""
+    if hasattr(value, "code") and hasattr(value, "name"):
+        value = value.code
+    return str(value).replace("|", "\\|").replace("\n", " ").replace("\r", " ")
+
+
+class SubjectProfile(MarkdownModel):
     age = models.IntegerField()
     gender = models.CharField(max_length=32)
     birth_country = CountryField(null=False)
@@ -21,33 +48,51 @@ class SubjectProfile(models.Model):
     test_status = models.CharField(max_length=32, default="active")
     campId = models.CharField(max_length=32, null=True, blank=True)
 
+    MARKDOWN_FIELDS = (
+        "payment_id", "age", "gender", "birth_country", "residence_country",
+        "mother_tongue", "Do_you_speak_English", "knowledge_on_usability",
+        "participated_before", "test_status", "workerId", "campId", "groupId",
+    )
+
     def __str__(self):
         return self.payment_id
 
 
-class TaskInfo(models.Model):
+class TaskInfo(MarkdownModel):
     id = models.AutoField(primary_key=True)
     task_id = models.CharField(max_length=64, null=True, default="id not saved")
     task_ans = models.CharField(max_length=1024, null=True)
     test_id = models.CharField(max_length=128, null=False, default="Id not saved")
 
+    MARKDOWN_FIELDS = ("id", "task_id", "task_ans", "test_id")
 
-class ClickInfo(models.Model):
+
+class ClickInfo(MarkdownModel):
     id = models.AutoField(primary_key=True)
     test_id = models.CharField(max_length=128, null=False, default="Id not saved")
     task_id = models.CharField(max_length=32, null=True, default="id not saved")
     click_info = models.TextField(null=True)
 
+    MARKDOWN_FIELDS = ("id", "test_id", "task_id", "click_info")
 
-class TasksDescription(models.Model):
+
+class TasksDescription(MarkdownModel):
     task_id = models.CharField(max_length=16, primary_key=True)
     task_description = models.TextField(null=True, default="Task description here")
     task_valid_question = models.TextField(null=True, default="Task validation question here")
     valid_ans_options = models.CharField(max_length=128, default="[]")
     answer = models.CharField(max_length=128, null=True)
 
+    MARKDOWN_FIELDS = (
+        "task_id", "task_description", "task_valid_question",
+        "valid_ans_options", "answer",
+    )
 
-class TaskStatus(models.Model):
+    def __str__(self):
+        return self.task_id
+
+
+class TaskStatus(MarkdownModel):
     subject_id = models.CharField(max_length=128, primary_key=True, default="id not saved")
     task_1_valid_question = models.CharField(max_length=32, null=True)
     task_1_score = models.IntegerField(null=True, blank=True)
@@ -58,13 +103,32 @@ class TaskStatus(models.Model):
     test_result = models.CharField(max_length=32, null=True)
     test_rating = models.CharField(max_length=32, null=True)
 
+    MARKDOWN_FIELDS = (
+        "subject_id", "task_1_valid_question", "task_1_score", "task_1_time",
+        "task_2_valid_question", "task_2_score", "task_2_time",
+        "test_result", "test_rating",
+    )
 
-class Test_Input(models.Model):
+    def __str__(self):
+        return self.subject_id
+
+
+class Test_Input(MarkdownModel):
     campId = models.CharField(max_length=64, primary_key=True, default="0")
     secret_key = models.CharField(max_length=100, null=True, default="secret-key")
     application_url = models.CharField(max_length=100, null=True, default="url")
 
+    MARKDOWN_FIELDS = ("campId", "secret_key", "application_url")
 
-class Approved_Testers(models.Model):
+    def __str__(self):
+        return self.campId
+
+
+class Approved_Testers(MarkdownModel):
     workerId = models.CharField(max_length=128, null=False, primary_key=True, default="0")
     status = models.CharField(max_length=32, null=True)
+
+    MARKDOWN_FIELDS = ("workerId", "status")
+
+    def __str__(self):
+        return self.workerId

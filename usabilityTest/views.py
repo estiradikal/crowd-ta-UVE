@@ -104,14 +104,8 @@ def update_task_answers(request):
         return JsonResponse({'failure': 'Session expired'}, status=403)
     
     taskinfo, created = TaskInfo.objects.get_or_create(test_id=testid, task_id=taskid)
-    if created:
-        TaskInfo.objects.filter(test_id=testid, task_id=taskid).update(task_ans=ans)
-    else:
-        obj = TaskInfo.objects.filter(test_id=testid, task_id=taskid)
-        json_obj = json_serializer(obj)
-        current_answer = json_obj[0]['fields']['task_ans']
-        new_answer = current_answer + ',' + ans
-        TaskInfo.objects.filter(test_id=testid, task_id=taskid).update(task_ans=new_answer)
+    taskinfo.task_ans = ans if created else (taskinfo.task_ans or '') + ',' + ans
+    taskinfo.save()
     return JsonResponse({'success': 'User response stored successfully'})
 
 def update_clicks(request):
@@ -126,14 +120,8 @@ def update_clicks(request):
         return JsonResponse({'failure': 'Session expired'}, status=403)
     
     clickinfo, created = ClickInfo.objects.get_or_create(test_id=testid, task_id=taskid)
-    if created:
-        ClickInfo.objects.filter(test_id=testid, task_id=taskid).update(click_info=click_info)
-    else:
-        obj = ClickInfo.objects.filter(test_id=testid, task_id=taskid)
-        json_obj = json_serializer(obj)
-        current_info = json_obj[0]['fields']['click_info']
-        new_info = current_info + ',' + click_info
-        ClickInfo.objects.filter(test_id=testid, task_id=taskid).update(click_info=new_info)
+    clickinfo.click_info = click_info if created else (clickinfo.click_info or '') + ',' + click_info
+    clickinfo.save()
     return JsonResponse({'success': 'Click info stored successfully'})
 
 def ins_page(request):
@@ -239,20 +227,17 @@ def Update_Test_Status(request):
         # Obtener respuestas esperadas
         valid_answers = get_task_answers(taskId)
 
+        status, _ = TaskStatus.objects.get_or_create(subject_id=payId)
+        task_status = "True" if task_answer in valid_answers else "False"
         if taskId == "1":
-            task_status = "True" if task_answer in valid_answers else "False"
-            TaskStatus.objects.filter(subject_id=payId).update(
-                task_1_valid_question=task_status,
-                task_1_time=task_time,
-                task_1_score=task_score
-            )
+            status.task_1_valid_question = task_status
+            status.task_1_time = task_time
+            status.task_1_score = task_score
         elif taskId == "2":
-            task_status = "True" if task_answer in valid_answers else "False"
-            TaskStatus.objects.filter(subject_id=payId).update(
-                task_2_valid_question=task_status,
-                task_2_time=task_time,
-                task_2_score=task_score
-            )
+            status.task_2_valid_question = task_status
+            status.task_2_time = task_time
+            status.task_2_score = task_score
+        status.save()
 
         return JsonResponse({'success': 'status updated'})
     else:
