@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block custom_styles %}
+<link rel="stylesheet" type="text/css" href="{% static '/css/main.css' %}?v=6">
 <style>
   /* Contenedor ocupa todo el ancho y sin margen superior excesivo */
   .container {
@@ -12,48 +13,113 @@
     margin-top: 0 !important;
   }
 
-  /* Título sin margen superior */
+  /* Título alineado a la misma columna (1000px) que la caja de IDs y las instrucciones */
   h2 {
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
     margin-top: 0 !important;
     padding-top: 5px;
+    font-size: 30px;              /* título de página */
+    font-weight: 600;
+    color: #4285f4;
+    line-height: 1.25;
   }
 
-  /* Iframe ocupa todo el ancho y 65% de altura (para que el botón sea visible) */
-  iframe {
-    width: 100% !important;
-    height: 65vh !important;
+  /* Contenedor del contenido Markdown: columna centrada como el documento original */
+  .md-instructions {
+    width: 100%;
+    max-width: 1000px;
+    min-height: 65vh;
+    max-height: 65vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     border: 1px solid #ddd;
     border-radius: 4px;
+    padding: 18px 24px;
+    background-color: #fff;
+    margin: 0 auto 15px;
+    box-shadow: 0 1px 2px rgba(60, 64, 67, 0.08);
   }
 
   /* Caja de IDs más compacta */
   .info-box {
-    background-color: #f8f9fa;
-    padding: 12px 20px;
+    background-color: #f5f8ff;
+    padding: 10px 18px;
     border-radius: 5px;
     margin-bottom: 15px;
-    border-left: 4px solid #007bff;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1000px;
+    border-left: 4px solid #4285f4;
   }
 
   .info-box p {
     margin: 3px 0;
-    font-size: 1.1rem;
+    font-size: 13px;
+    color: #3c4043;
   }
 
   .info-box strong {
     display: inline-block;
-    min-width: 120px;
+    min-width: 110px;
+    color: #3c4043;
   }
 
   .btn-primary {
     margin-top: 15px;
-    padding: 10px 30px;
-    font-size: 1.1rem;
+    padding: 9px 26px;
+    font-size: 14px;
   }
 
   /* Asegurar que el botón no quede oculto */
   .text-center {
     margin-bottom: 20px;
+  }
+
+  /* ---------------- Responsive ---------------- */
+  @media (max-width: 767.98px) {
+    .container {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+
+    h2 {
+      font-size: 26px;
+    }
+
+    .md-instructions {
+      min-height: 0;
+      max-height: none;      /* en móvil el contenido fluye y scrollea la página */
+      padding: 14px 14px;
+      border-radius: 6px;
+    }
+
+    .info-box {
+      padding: 10px 14px;
+    }
+
+    .info-box p {
+      font-size: 12.5px;
+    }
+
+    .info-box strong {
+      min-width: 0;
+      margin-right: 6px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      font-size: 14px;
+      padding: 11px 20px;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    h2 {
+      font-size: 26px;
+    }
   }
 </style>
 {% endblock %}
@@ -69,13 +135,23 @@
     <p><strong>Worker ID:</strong> {{ workerId }}</p>
   </div>
 
-  <!-- Iframe del documento de instrucciones -->
-  <iframe src="https://docs.google.com/document/d/e/2PACX-1vT0-hQ-uLyiNucMANjnicGlXq69n8MJ6oL0K3nM2xf3qTLQEtQcq62dxAxbmQSQIeC31VqA9eHk3SCt/pub?embedded=true" 
-          frameborder="0"></iframe>
+  <!-- Contenido de instrucciones cargado desde la BD (Markdown) y renderizado con marked.js -->
+  <div id="instructions-md" class="md-instructions md-content"></div>
 
   <!-- Botón Next (siempre visible) -->
   <div class="text-center">
     <a class="btn btn-primary" href="{% url 'user_registration' %}" role="button">Next</a>
   </div>
 </div>
+{% endblock %}
+
+{% block custom_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+  (function () {
+    var source = "{{ instructions_md|escapejs }}";
+    var target = document.getElementById("instructions-md");
+    target.innerHTML = marked.parse(source);
+  })();
+</script>
 {% endblock %}

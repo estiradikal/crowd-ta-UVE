@@ -132,3 +132,22 @@ class Approved_Testers(MarkdownModel):
 
     def __str__(self):
         return self.workerId
+
+
+class InstructionsPage(models.Model):
+    """Contenido textual de la plataforma guardado como Markdown en la BD.
+
+    Se renderiza en el navegador con marked.js (ver templates).
+    """
+
+    key = models.CharField(max_length=64, primary_key=True, default="general_instructions")
+    title = models.CharField(max_length=128, default="Instructions")
+    content_md = models.TextField(blank=True, default="")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Instructions page"
+        verbose_name_plural = "Instructions pages"
+
+    def __str__(self):
+        return self.key

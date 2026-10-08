@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.exceptions import PermissionDenied
 from .forms import SubjectProfileForm
-from .models import SubjectProfile, TaskInfo, ClickInfo, TasksDescription, TaskStatus, Approved_Testers, Test_Input
+from .models import SubjectProfile, TaskInfo, ClickInfo, TasksDescription, TaskStatus, Approved_Testers, Test_Input, InstructionsPage
 from django.http import JsonResponse, Http404
 from django.core.files.storage import FileSystemStorage
 from datetime import date
@@ -30,6 +30,10 @@ def json_serializer(input_data):
     json_obj = serializers.serialize('json', input_data)
     return json.loads(json_obj)
 
+def get_instructions_md(key="general_instructions"):
+    """Devuelve el contenido de instrucciones (Markdown) almacenado en la BD."""
+    return InstructionsPage.objects.filter(key=key).values_list("content_md", flat=True).first() or ""
+
 # --- Vistas ---
 def user_registration(request):
     if 'payid' in request.session:
@@ -47,7 +51,8 @@ def main_page(request, task_id):
         info = {
             'task': task,
             'task_count': get_total_tasks(),
-            'options': task.valid_ans_options
+            'options': task.valid_ans_options,
+            'instructions_md': get_instructions_md(),
         }
         return render(request, 'main_templates/recordmedia.html', info)
     else:
@@ -157,7 +162,8 @@ def ins_page(request):
         'workerId': worker_id,
         'campId': camp_id,
         'groupId': group_id,
-        'payId': payId
+        'payId': payId,
+        'instructions_md': get_instructions_md(),
     }
     return render(request, 'main_templates/instructions.html', context)
 
