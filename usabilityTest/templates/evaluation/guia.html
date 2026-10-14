@@ -1,0 +1,16 @@
+{% extends "evaluation/base_admin.html" %}
+
+{% block title %}Evaluation Guide - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="dashboard guide-page">
+    <h2>Evaluation Guide</h2>
+    <p class="text-muted">Methodological guide for evaluators. You can also open it as a side panel from any page with <kbd>?</kbd> or the <i class="fas fa-book-open"></i> button next to "Evaluation Guide" in the menu.</p>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            {% include "evaluation/_guia_contenido.html" %}
+        </div>
+    </div>
+</div>
+{% endblock %}

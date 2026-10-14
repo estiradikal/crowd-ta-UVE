@@ -36,9 +36,7 @@
 }
 \lstset{style=mystyle}
 
-\title{\textbf{Informe de Modernización del Proyecto}}\\
-\subtitle{Etapa 1: Actualización del Entorno y Dependencias}
-
+\title{\textbf{Informe de Modernización del Proyecto Crowd-TA-UVE}}
 \author{Estiven Martínez}
 \date{\today}
 
@@ -47,16 +45,15 @@
 \maketitle
 
 \begin{abstract}
-El presente informe documenta los cambios realizados durante la primera etapa del proceso de modernización del proyecto \textit{``The Crowd Thinks Aloud''} (Crowd-TA-UVE). Esta etapa consistió en la creación de un entorno virtual con Python 3.13, la instalación de Django 5.1 y la actualización de todas las dependencias del proyecto a sus versiones más recientes. Además, se reemplazó la librería obsoleta \texttt{django-gsheets} por las soluciones modernas \texttt{gspread} y \texttt{google-api-python-client}. Finalmente, se creó una rama Git denominada \texttt{ramaEstiven} para aislar los cambios y se subió al repositorio remoto en GitHub.
+El presente informe documenta el proceso completo de modernización del proyecto \textit{``The Crowd Thinks Aloud''} (Crowd-TA-UVE), realizado entre el 18 y 19 de agosto de 2026. El proyecto fue migrado desde Django 3.0.8 y Python 3.8 a Django 5.1 y Python 3.13, eliminando dependencias obsoletas, adaptando la configuración para entornos Windows, creando la base de datos SQLite, y poniendo en funcionamiento el servidor de desarrollo. Se incluyen todas las etapas, desde la actualización del entorno hasta la fusión de ramas en Git y la puesta en marcha del flujo completo del proyecto.
 \end{abstract}
 
 \section{Introducción}
-El proyecto \textit{Crowd-TA-UVE} fue desarrollado originalmente con Django 3.0.8 y Python 3.8, y depende de varias librerías que hoy en día están obsoletas o son incompatibles con las versiones modernas de Python (3.13). El objetivo de esta modernización es hacer que el proyecto pueda ejecutarse en el entorno actual del desarrollador sin errores, manteniendo la funcionalidad original y preparando el código para futuras mejoras.
+El proyecto \textit{Crowd-TA-UVE} fue desarrollado originalmente con Django 3.0.8 y Python 3.8, y dependía de varias librerías que hoy en día están obsoletas o son incompatibles con las versiones modernas de Python (3.13). El objetivo de esta modernización fue hacer que el proyecto pudiera ejecutarse en el entorno actual del desarrollador (Windows 11, Python 3.13) sin errores, manteniendo la funcionalidad original y preparando el código para futuras mejoras.
 
-Esta primera etapa se enfocó en la parte más crítica y de menor riesgo: el entorno de ejecución y las dependencias.
+El proceso se dividió en 7 etapas, documentadas a continuación.
 
-\section{Acciones Realizadas}
-
+\section{Etapa 1: Actualización del Entorno y Dependencias}
 \subsection{Creación del Entorno Virtual}
 Se creó un entorno virtual aislado utilizando Python 3.13.0, asegurando que todas las instalaciones futuras no afecten al sistema global.
 
@@ -67,22 +64,16 @@ python -m venv venv
 \end{lstlisting}
 
 \subsection{Actualización de Pip}
-Antes de instalar cualquier paquete, se actualizó \texttt{pip} a la última versión disponible.
-
 \begin{lstlisting}[language=bash, caption={Actualización de pip}]
 python -m pip install --upgrade pip
 \end{lstlisting}
 
 \subsection{Instalación de Django 5.1}
-Se instaló Django 5.1, que es la versión más reciente y estable con soporte para Python 3.13.
-
 \begin{lstlisting}[language=bash, caption={Instalación de Django 5.1}]
 pip install django==5.1
 \end{lstlisting}
 
 \subsection{Instalación de Dependencias Modernas}
-Se actualizaron todas las librerías utilizadas por el proyecto a sus versiones más recientes, reemplazando aquellas que estaban obsoletas.
-
 \begin{lstlisting}[language=bash, caption={Instalación de dependencias actualizadas}]
 pip install django-crispy-forms>=2.1
 pip install crispy-bootstrap5>=0.7
@@ -90,7 +81,6 @@ pip install django-cors-headers>=4.3
 pip install django-extensions>=3.2
 pip install django-countries>=7.6
 pip install pillow>=10.0
-pip install django-language-field (versión 0.0.3)
 \end{lstlisting}
 
 \subsection{Reemplazo de \texttt{django-gsheets} por \texttt{gspread}}
@@ -103,15 +93,11 @@ pip install google-auth-oauthlib>=1.0
 \end{lstlisting}
 
 \subsection{Generación de \texttt{requirements\_modern.txt}}
-Se exportó la lista completa de dependencias instaladas para futuras referencias y despliegues.
-
 \begin{lstlisting}[language=bash, caption={Exportación de dependencias}]
 pip freeze > requirements_modern.txt
 \end{lstlisting}
 
 \subsection{Gestión de Versiones con Git}
-Se inicializó un repositorio Git en el proyecto y se creó una rama llamada \texttt{ramaEstiven} para aislar los cambios de modernización de la rama principal. Además, se subió esta rama al repositorio remoto en GitHub.
-
 \begin{lstlisting}[language=bash, caption={Comandos Git ejecutados}]
 git init
 git add .
@@ -121,21 +107,164 @@ git remote add origin https://github.com/estiradikal/crowd-ta-UVE
 git push -u origin ramaEstiven
 \end{lstlisting}
 
-\section{Estado Actual del Proyecto}
-Tras la finalización de esta etapa, el proyecto cuenta con:
+\section{Etapa 2: Actualización de \texttt{settings.py}}
+Se modificó el archivo \texttt{settings.py} para hacerlo compatible con Django 5.1 y con el entorno Windows.
+
+\subsection{Cambios realizados}
 \begin{itemize}[label=--]
-    \item Un entorno virtual con Python 3.13 y Django 5.1.
-    \item Todas las dependencias instaladas en sus versiones más recientes.
-    \item Las librerías obsoletas (\texttt{django-gsheets}) han sido reemplazadas por alternativas modernas.
-    \item Los cambios se encuentran aislados en la rama \texttt{ramaEstiven} y respaldados en GitHub.
+    \item \texttt{DEBUG = True} (para desarrollo local).
+    \item \texttt{ALLOWED\_HOSTS = ['localhost', '127.0.0.1']}.
+    \item Base de datos SQLite configurada.
+    \item Rutas de archivos estáticos adaptadas a Windows.
+    \item Se agregó \texttt{CorsMiddleware} al principio de \texttt{MIDDLEWARE}.
+    \item Se agregó \texttt{'django\_language\_field'} a \texttt{INSTALLED\_APPS}.
+    \item Se agregó \texttt{DEFAULT\_AUTO\_FIELD = 'django.db.models.BigAutoField'}.
+    \item Se eliminó la opción obsoleta \texttt{USE\_L10N}.
 \end{itemize}
 
-El código fuente aún no ha sido modificado; todos los cambios realizados hasta ahora son exclusivamente del entorno de ejecución y la configuración de dependencias.
+\section{Etapa 3: Eliminación de Dependencias Obsoletas}
+\subsection{Reemplazo de \texttt{django-language-field} por \texttt{CharField}}
+El paquete \texttt{django-language-field} no se instalaba correctamente, por lo que se decidió reemplazar el campo \texttt{LanguageField} en los modelos por un \texttt{CharField} estándar.
+
+\begin{itemize}[label=--]
+    \item En \texttt{models.py}: \texttt{mother\_tongue = models.CharField(max\_length=32, null=False, default="unknown")}
+    \item En \texttt{forms.py}: \texttt{mother\_tongue = forms.CharField(max\_length=32, required=True, label="Mother Tongue")}
+    \item Se eliminó \texttt{'django\_language\_field'} de \texttt{INSTALLED\_APPS}.
+\end{itemize}
+
+\subsection{Eliminación de \texttt{gsheets.mixins}}
+Las clases \texttt{TaskStatus} y \texttt{Approved\_Testers} ya no heredan de los mixins de \texttt{gsheets}. Se eliminó la dependencia completamente.
+
+\begin{itemize}[label=--]
+    \item Se comentó \texttt{from gsheets import mixins} en \texttt{models.py}.
+    \item Se eliminó la herencia de \texttt{mixins.SheetPushableMixin} y \texttt{mixins.SheetSyncableMixin}.
+    \item Se comentó la URL \texttt{path('', include('gsheets.urls'))} en \texttt{urls.py}.
+    \item Se eliminó \texttt{'gsheets'} de \texttt{INSTALLED\_APPS}.
+\end{itemize}
+
+\section{Etapa 4: Migraciones y Base de Datos}
+\subsection{Creación de la Base de Datos}
+Se eliminó el archivo \texttt{db.sqlite3} (si existía) y se ejecutaron las migraciones para crear las tablas desde cero.
+
+\begin{lstlisting}[language=bash, caption={Comandos para migrar la base de datos}]
+del db.sqlite3
+python manage.py makemigrations
+python manage.py migrate usabilityTest
+python manage.py migrate
+\end{lstlisting}
+
+\subsection{Poblado de Datos Iniciales}
+Se crearon dos tareas en la tabla \texttt{TasksDescription} para poder probar el flujo completo del proyecto.
+
+\begin{lstlisting}[language=python, caption={Código para insertar tareas de prueba}]
+from usabilityTest.models import TasksDescription
+
+TasksDescription.objects.create(
+    task_id='1',
+    task_description='Encuentra el curso "Global Warming Science" en la plataforma EDX.',
+    task_valid_question='¿Cuál es el nombre de uno de los instructores?',
+    valid_ans_options='["Prof. John Smith", "Dr. Jane Doe"]',
+    answer='John Smith'
+)
+
+TasksDescription.objects.create(
+    task_id='2',
+    task_description='Encuentra cursos avanzados sobre "Climate change".',
+    task_valid_question='¿Cuál es el nombre de uno de los cursos?',
+    valid_ans_options='["Climate Change Science", "Energy Systems"]',
+    answer='Climate Change Science'
+)
+\end{lstlisting}
+
+\section{Etapa 5: Corrección de Errores en \texttt{views.py}}
+\subsection{Descomentado de Variables Globales}
+Se descomentaron las líneas que definían las variables globales \texttt{Total\_Tasks\_}, \texttt{Total\_Active}, \texttt{Task\_1\_Answer} y \texttt{Task\_2\_Answer} para corregir el error \texttt{NameError} en la vista \texttt{payment\_id}.
+
+\begin{lstlisting}[language=python, caption={Variables descomentadas en views.py}]
+Total_Tasks_ = TasksDescription.objects.all().count()
+Total_Active = SubjectProfile.objects.all().count()
+Task_1_Answer = TasksDescription.objects.get(task_id=1).answer
+Task_1_Answer = Task_1_Answer.split("|")
+Task_2_Answer = TasksDescription.objects.get(task_id=2).answer
+Task_2_Answer = Task_2_Answer.split("|")
+\end{lstlisting}
+
+\subsection{Corrección de Importación de \texttt{redirect}}
+Se agregó la importación de \texttt{redirect} en \texttt{urls.py} para corregir el error \texttt{NameError} en la redirección de la raíz.
+
+\begin{lstlisting}[language=python, caption={Importación de redirect}]
+from django.shortcuts import redirect
+\end{lstlisting}
+
+\section{Etapa 6: Configuración de Crispy Forms con Bootstrap 4}
+El proyecto original usaba Bootstrap 4, pero se había instalado \texttt{crispy-bootstrap5}. Se corrigió instalando \texttt{crispy-bootstrap4} y ajustando \texttt{settings.py}.
+
+\begin{lstlisting}[language=bash, caption={Cambio a Bootstrap 4}]
+pip uninstall crispy-bootstrap5 -y
+pip install crispy-bootstrap4
+\end{lstlisting}
+
+\begin{lstlisting}[language=python, caption={Configuración en settings.py}]
+INSTALLED_APPS = [
+    ...
+    'crispy_forms',
+    'crispy_bootstrap4',
+    ...
+]
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = ("bootstrap4",)
+CRISPY_TEMPLATE_PACK = "bootstrap4"
+\end{lstlisting}
+
+\section{Etapa 7: Gestión de Ramas en Git y Fusión}
+\subsection{Creación de la Rama \texttt{master}}
+Se creó la rama \texttt{master} a partir de la rama remota \texttt{origin/master} (que ya existía en GitHub como rama por defecto).
+
+\begin{lstlisting}[language=bash, caption={Creación de master local}]
+git fetch origin
+git checkout -b master origin/master
+\end{lstlisting}
+
+\subsection{Eliminación de la Rama \texttt{main}}
+Se eliminó la rama \texttt{main} local y remota para mantener solo \texttt{master} como rama principal.
+
+\begin{lstlisting}[language=bash, caption={Eliminación de main}]
+git branch -D main
+git push origin --delete main
+\end{lstlisting}
+
+\subsection{Fusión de \texttt{ramaEstiven} en \texttt{master}}
+Se fusionaron todos los cambios modernizados de \texttt{ramaEstiven} en \texttt{master} usando la bandera \texttt{--allow-unrelated-histories} para permitir la fusión de historias diferentes.
+
+\begin{lstlisting}[language=bash, caption={Fusión de ramaEstiven en master}]
+git checkout master
+git merge ramaEstiven --allow-unrelated-histories
+git push origin master
+\end{lstlisting}
+
+\section{Estado Actual del Proyecto}
+Tras completar todas las etapas, el proyecto se encuentra en el siguiente estado:
+
+\begin{itemize}[label=--]
+    \item \textbf{Entorno:} Python 3.13 con Django 5.1, entorno virtual \texttt{venv}.
+    \item \textbf{Dependencias:} Todas las librerías actualizadas y compatibles.
+    \item \textbf{Base de datos:} SQLite con migraciones aplicadas y datos iniciales (2 tareas).
+    \item \textbf{Código:} Adaptado a Django 5.1, sin dependencias obsoletas (\texttt{gsheets}, \texttt{django-language-field}).
+    \item \textbf{Git:} Rama \texttt{master} como rama principal, con todo el código modernizado.
+    \item \textbf{Servidor:} Funcionando localmente en \texttt{http://127.0.0.1:8000/} con redirección a \texttt{/index/?workerId=test\&campId=test}.
+    \item \textbf{Flujo:} Registro de usuarios, entrenamiento, tareas y pago funcionando correctamente.
+\end{itemize}
 
 \section{Próximos Pasos}
-La siguiente etapa (Etapa 2) consistirá en la actualización del archivo \texttt{settings.py} para que sea compatible con Django 5.1, incluyendo ajustes en \texttt{DEBUG}, \texttt{ALLOWED\_HOSTS}, la configuración de la base de datos, las rutas de archivos estáticos, el middleware y las aplicaciones instaladas.
+\begin{itemize}[label=--]
+    \item Probar el flujo completo en diferentes navegadores.
+    \item Ajustar el campo \texttt{Mother Tongue} para que tenga opciones predefinidas (si se desea).
+    \item Implementar la sincronización con Google Sheets usando \texttt{gspread} (actualmente comentada).
+    \item Configurar variables de entorno para secretos y claves de API.
+    \item Preparar el proyecto para producción (cambiar \texttt{DEBUG = False}, configurar servidor WSGI/ASGI).
+\end{itemize}
 
 \section{Conclusiones}
-La Etapa 1 se ha completado con éxito. El entorno de desarrollo está listo para comenzar la migración del código fuente. La decisión de reemplazar \texttt{django-gsheets} por \texttt{gspread} y \texttt{google-api-python-client} garantizará una mayor estabilidad y soporte a futuro. La creación de una rama independiente facilita el trabajo colaborativo y permite revertir cambios si fuera necesario.
+La modernización del proyecto \textit{Crowd-TA-UVE} se ha completado con éxito. El proyecto ahora es ejecutable en el entorno actual del desarrollador con Django 5.1 y Python 3.13, sin errores de sintaxis o dependencias obsoletas. La creación de una rama \texttt{master} estable permite que otros colaboradores puedan clonar y trabajar sobre el código sin problemas. El flujo completo del proyecto (registro, tareas, pago) ha sido probado y funciona correctamente en el entorno de desarrollo local.
 
 \end{document}

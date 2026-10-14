@@ -1,0 +1,171 @@
+{% extends "evaluation/base_admin.html" %}
+
+{% block title %}Annotation Table - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="tabla-anotaciones">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1">Annotation Table</h2>
+            <p class="text-muted mb-0">Same sheets as the Excel file. Annotations are saved here automatically while you evaluate a video.</p>
+        </div>
+        <form method="get" class="form-inline mt-2">
+            <label for="videoFilter" class="mr-2">Video</label>
+            <select name="video" id="videoFilter" class="form-control" onchange="this.form.submit()">
+                <option value="">All videos</option>
+                {% for ev in todas_evaluaciones %}
+                <option value="{{ ev.id }}" {% if seleccion == ev.id|stringformat:"d" %}selected{% endif %}>
+                    {{ ev.payment_id|truncatechars:24 }} - Task {{ ev.task_id }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <ul class="nav nav-tabs sheet-tabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#sheet-annotations" role="tab">
+                1. Annotation table <span class="tab-count">{{ anotaciones|length }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#sheet-problems" role="tab">
+                2. Problem table <span class="tab-count">{{ problemas|length }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#sheet-time" role="tab">
+                3. Time annotation <span class="tab-count">{{ tiempos|length }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#sheet-summary" role="tab">
+                Problem summary
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- 1. Annotation table -->
+        <div class="tab-pane fade show active" id="sheet-annotations" role="tabpanel">
+            <div class="sheet-table-wrap">
+                <table class="table table-sm table-hover sheet-table">
+                    <thead>
+                        <tr>
+                            <th>video_id</th>
+                            <th>start_time</th>
+                            <th>finish_time</th>
+                            <th>indicator_code</th>
+                            <th>task_moment</th>
+                            <th>problem</th>
+                            <th>comments</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in anotaciones %}
+                        <tr>
+                            <td class="video-cell" title="{{ a.video }}">{{ a.video }}</td>
+                            <td class="mono">{{ a.start_time }}</td>
+                            <td class="mono">{{ a.finish_time }}</td>
+                            <td><span class="badge badge-info">{{ a.indicador }}</span></td>
+                            <td>{{ a.contexto }}</td>
+                            <td class="wrap">{{ a.problema }}</td>
+                            <td class="wrap">{{ a.comentarios }}</td>
+                            <td class="actions-cell">
+                                <a href="/admin-panel/evaluar/{{ a.evaluacion.payment_id }}/{{ a.evaluacion.task_id }}/#annotation-table"
+                                   class="btn btn-sm btn-outline-primary" title="Edit in the evaluation page">
+                                    <i class="fas fa-pen"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="text-center text-muted py-4">No annotations yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 2. Problem table -->
+        <div class="tab-pane fade" id="sheet-problems" role="tabpanel">
+            <div class="sheet-table-wrap">
+                <table class="table table-sm table-hover sheet-table">
+                    <thead>
+                        <tr>
+                            <th>video_id</th>
+                            <th>code</th>
+                            <th>problem</th>
+                            <th>severity</th>
+                            <th>type</th>
+                            <th>comment</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in problemas %}
+                        <tr>
+                            <td class="video-cell" title="{{ p.video }}">{{ p.video }}</td>
+                            <td><span class="badge badge-dark">{{ p.problema.codigo }}</span></td>
+                            <td class="wrap">{{ p.problema.descripcion }}</td>
+                            <td>
+                                <span class="badge badge-{% if p.severidad == 'Critical' %}danger{% elif p.severidad == 'Serious' %}warning{% else %}secondary{% endif %}">{{ p.severidad }}</span>
+                            </td>
+                            <td>{{ p.tipo }}</td>
+                            <td class="wrap">{{ p.comentarios }}</td>
+                            <td class="actions-cell">
+                                <a href="/admin-panel/evaluar/{{ p.evaluacion.payment_id }}/{{ p.evaluacion.task_id }}/#problem-table"
+                                   class="btn btn-sm btn-outline-primary" title="Edit in the evaluation page">
+                                    <i class="fas fa-pen"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center text-muted py-4">No problems registered yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3. Time annotation -->
+        <div class="tab-pane fade" id="sheet-time" role="tabpanel">
+            {% include "evaluation/_tabla_tiempos.html" with evaluaciones=tiempos %}
+        </div>
+
+        <!-- Summary: occurrences per problem per video -->
+        <div class="tab-pane fade" id="sheet-summary" role="tabpanel">
+            {% for r in resumen_videos %}
+            <div class="card mb-4">
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
+                    <span>
+                        <strong>Video:</strong> <span class="mono" title="{{ r.video }}">{{ r.video|truncatechars:40 }}</span>
+                        &middot; Task {{ r.evaluacion.task_id }}
+                    </span>
+                    <a href="/admin-panel/evaluar/{{ r.evaluacion.payment_id }}/{{ r.evaluacion.task_id }}/#problem-summary" class="btn btn-sm btn-outline-secondary">Open</a>
+                </div>
+                <div class="card-body">
+                    <div class="summary-stats">
+                        <div class="summary-stat">
+                            <div class="label">Annotations</div>
+                            <div class="value">{{ r.totales.anotaciones }}</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="label">Distinct problems</div>
+                            <div class="value">{{ r.totales.problemas_distintos }}</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="label">Average occurrences per problem</div>
+                            <div class="value">{{ r.totales.promedio_por_problema }}</div>
+                        </div>
+                    </div>
+                    {% include "evaluation/_resumen_tabla.html" with filas=r.filas %}
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted text-center py-4">No annotations yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

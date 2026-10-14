@@ -1,0 +1,32 @@
+<p class="text-muted">
+    <strong>duration</strong> = finish &minus; start, as in the Excel sheet (includes breaks).
+    <strong>active_time</strong> only counts while the evaluation page is open and visible.
+</p>
+<div class="sheet-table-wrap">
+    <table class="table table-sm table-hover sheet-table">
+        <thead>
+            <tr>
+                <th>video_id</th>
+                <th>annotation_start_time</th>
+                <th>annotation_finish_time</th>
+                <th>duration</th>
+                <th>active_time</th>
+                <th>evaluator</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ev in evaluaciones %}
+            <tr>
+                <td class="video-cell" title="{{ ev.video }}">{{ ev.video }}</td>
+                <td class="mono">{{ ev.fecha_inicio|date:"Y-m-d H:i" }}</td>
+                <td class="mono">{% if ev.fecha_fin %}{{ ev.fecha_fin|date:"Y-m-d H:i" }}{% else %}<span class="text-muted">In progress</span>{% endif %}</td>
+                <td class="mono">{{ ev.duracion_texto|default:"-" }}</td>
+                <td class="mono" data-active-time>{{ ev.tiempo_activo_texto }}</td>
+                <td>{{ ev.evaluador|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">No video has been opened for evaluation yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

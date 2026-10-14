@@ -1,0 +1,117 @@
+{# Evaluation guide content. Used by the full guide page and by the side panel (base_admin.html). #}
+{# Source: annexes A1-A5 of VideoAnnoation_UsabilityProblems_Public.xlsx #}
+<div class="guide-content">
+
+<section class="guide-section" data-guide-section="workflow">
+    <h4><span class="guide-num">1</span> How to evaluate a video</h4>
+    <ol class="guide-steps">
+        <li class="guide-item">Open <strong>Videos</strong> and click <strong>Evaluate</strong>. The annotation timer starts and only counts while the page is visible.</li>
+        <li class="guide-item">Play the video. Press <strong>Mark Start</strong> when you see an indicator, and <strong>Mark End</strong> when it finishes (End is optional for instant events).</li>
+        <li class="guide-item">Choose the <strong>problem</strong>: type to filter the list, or pick <strong>Create new problem</strong> to register it with its severity and type.</li>
+        <li class="guide-item">Choose the <strong>indicator</strong> and the <strong>task moment</strong>, add comments if needed, and click <strong>Save Annotation</strong>.</li>
+        <li class="guide-item">Check your work in the <strong>1. Annotation table</strong>, <strong>2. Problem table</strong> and <strong>Problem summary</strong> tabs. Use <i class="fas fa-pen"></i> to fix a mistake.</li>
+        <li class="guide-item">When done, click <strong>Finish Evaluation</strong>. This records the finish time in <strong>3. Time annotation</strong>.</li>
+    </ol>
+    <p class="guide-tip"><i class="fas fa-lightbulb"></i> Press <kbd>?</kbd> anywhere in the panel to open this guide without leaving the video.</p>
+</section>
+
+<section class="guide-section" data-guide-section="indicators">
+    <h4><span class="guide-num">2</span> Indicators <small>indicator_code</small></h4>
+    <h6 class="guide-subhead">Based on actions performed on the UI</h6>
+    <dl class="guide-defs">
+        <div class="guide-item"><dt><code>ACT</code> Wrong action</dt><dd>An action does not belong in the correct sequence; is omitted; is replaced by another action; or actions are performed in reversed order.</dd></div>
+        <div class="guide-item"><dt><code>DISC</code> Discontinues action</dt><dd>User points at a function as if to start executing it, but then does not; or stops executing an action before it is finished.</dd></div>
+        <div class="guide-item"><dt><code>EXE</code> Execution problem</dt><dd>Execution of the action is not done correctly or optimally.</dd></div>
+        <div class="guide-item"><dt><code>REP</code> Repeated action</dt><dd>An action is repeated with the same effect.</dd></div>
+        <div class="guide-item"><dt><code>CORR</code> Corrective action</dt><dd>An action is corrected with a subsequent action (or sequence of actions), or an action is undone.</dd></div>
+        <div class="guide-item"><dt><code>STOP</code> Task stopped</dt><dd>Starts a new task before having successfully finished the current task.</dd></div>
+    </dl>
+    <h6 class="guide-subhead">Based on verbal or non-verbal behaviour of the worker</h6>
+    <dl class="guide-defs">
+        <div class="guide-item"><dt><code>GOAL</code> Wrong goal</dt><dd>User formulates a goal that cannot be achieved with the product or does not contribute to the task goal.</dd></div>
+        <div class="guide-item"><dt><code>PUZZ</code> Puzzled</dt><dd>User indicates not knowing how to perform the task or which function is needed, or not being sure whether an action is needed.</dd></div>
+        <div class="guide-item"><dt><code>RAND</code> Random actions</dt><dd>User indicates that the current action(s) are chosen randomly.</dd></div>
+        <div class="guide-item"><dt><code>SEARCH</code> Searches for function</dt><dd>User cannot locate a specific function, or searches for a function the analyst knows does not exist.</dd></div>
+        <div class="guide-item"><dt><code>DIFF</code> Execution difficulty</dt><dd>User has physical problems executing an action, or finds it difficult or uncomfortable.</dd></div>
+        <div class="guide-item"><dt><code>DSF</code> Doubt, surprise, frustration</dt><dd>User is not sure an action was executed properly, does not understand its effect, is surprised by it, or finds the effect unsatisfactory or frustrating.</dd></div>
+        <div class="guide-item"><dt><code>REC</code> Recognition of error</dt><dd>User recognises a preceding error, or understands something previously not understood.</dd></div>
+        <div class="guide-item"><dt><code>QUIT</code> Quits task</dt><dd>User recognises the current task was not finished successfully, but continues with the next one.</dd></div>
+    </dl>
+    <p class="guide-source">Source: Vermeeren et al. (2002). DEVAN: A tool for detailed video analysis of user test data. Behaviour &amp; IT, 21(6).</p>
+</section>
+
+<section class="guide-section" data-guide-section="moments">
+    <h4><span class="guide-num">3</span> Task moments <small>task_moment</small></h4>
+    <dl class="guide-defs">
+        <div class="guide-item"><dt>Qualification <span class="guide-opt">optional</span></dt><dd>Tests or qualifications taken by workers, before or after the initial instructions. <em>E.g. language proficiency test, browser check.</em></dd></div>
+        <div class="guide-item"><dt>Instructions</dt><dd>Any instructions shown to the worker, usually at the beginning, sometimes also during the task.</dd></div>
+        <div class="guide-item"><dt>Demographic questionnaire <span class="guide-opt">optional</span></dt><dd>Questions about the worker's demographic details. May contain validity-check questions.</dd></div>
+        <div class="guide-item"><dt>Training</dt><dd>Interactive or non-interactive demos or tests that help understand the instructions. <em>E.g. quiz, interactive demo, video.</em></dd></div>
+        <div class="guide-item"><dt>Main task</dt><dd>The main activity: the actual data collection that will be used later.</dd></div>
+        <div class="guide-item"><dt>Final questionnaire <span class="guide-opt">optional</span></dt><dd>Questions about the experience with the main task. <em>E.g. motivation questionnaire.</em></dd></div>
+        <div class="guide-item"><dt>Payment</dt><dd>Payment information.</dd></div>
+        <div class="guide-item"><dt>Help/Support/Feedback</dt><dd>Any help, support or feedback channel offered to workers.</dd></div>
+    </dl>
+</section>
+
+<section class="guide-section" data-guide-section="formulation">
+    <h4><span class="guide-num">4</span> How to write a problem <small>problem</small></h4>
+    <p class="guide-item">A usability problem is <em>"an aspect of the system and/or a demand on the user which makes it unpleasant, inefficient, onerous or impossible for the user to achieve their goals in typical usage situations."</em> (Lavery et al., 1997)</p>
+    <div class="guide-formula guide-item">
+        <div class="guide-formula-label">From the system / task perspective</div>
+        <p>The <b>[Task/UI element]</b> <b>[problem]</b> resulting in the <b>[worker's difficulty]</b></p>
+        <ul>
+            <li>The initial instructions contain too much text, resulting in the worker skimming parts of it.</li>
+            <li>Some images are too dense, resulting in workers annotating just parts of a tumor.</li>
+        </ul>
+    </div>
+    <div class="guide-formula guide-item">
+        <div class="guide-formula-label">From the worker perspective</div>
+        <p>Worker does <b>[unexpected action]</b> instead of <b>[expected action]</b></p>
+        <ul>
+            <li>Worker moves the cursor directly to Next instead of reading the instructions.</li>
+            <li>Worker annotates red regions instead of tumor regions.</li>
+        </ul>
+    </div>
+    <p class="guide-tip"><i class="fas fa-lightbulb"></i> Reuse an existing problem when it is the same issue. Repeated occurrences are what the Problem summary counts.</p>
+</section>
+
+<section class="guide-section" data-guide-section="severity">
+    <h4><span class="guide-num">5</span> Severity <small>severity</small></h4>
+    <div class="guide-sev guide-item guide-sev-critical">
+        <div class="guide-sev-name"><span class="badge badge-danger">Critical</span></div>
+        <ul>
+            <li><b>Slowed down:</b> hindered in solving the task.</li>
+            <li><b>Understanding:</b> does not understand how information in the system can be used to solve the task; repeats the same information in different parts of the system.</li>
+        </ul>
+    </div>
+    <div class="guide-sev guide-item guide-sev-serious">
+        <div class="guide-sev-name"><span class="badge badge-warning">Serious</span></div>
+        <ul>
+            <li><b>Slowed down:</b> delayed for several seconds.</li>
+            <li><b>Understanding:</b> does not understand how a specific functionality operates or is activated; cannot explain how the system works.</li>
+            <li><b>Frustration:</b> clearly annoyed by something that cannot be done or remembered, or something illogical; believes they damaged something.</li>
+        </ul>
+    </div>
+    <div class="guide-sev guide-item guide-sev-cosmetic">
+        <div class="guide-sev-name"><span class="badge badge-secondary">Cosmetic</span></div>
+        <ul>
+            <li><b>Slowed down:</b> delayed for a few seconds.</li>
+            <li><b>Understanding:</b> does actions without being able to explain why ("you just have to do it").</li>
+        </ul>
+    </div>
+    <p class="guide-source">Source: Skov &amp; Stage (2005). Supporting Problem Identification in Usability Evaluations. OZCHI.</p>
+</section>
+
+<section class="guide-section" data-guide-section="types">
+    <h4><span class="guide-num">6</span> Problem types <small>type</small></h4>
+    <dl class="guide-defs">
+        <div class="guide-item"><dt>Navigation</dt><dd>Problems navigating between pages or finding the right links for information or functions. <em>E.g. trouble returning to the home page.</em></dd></div>
+        <div class="guide-item"><dt>Layout</dt><dd>Difficulties caused by web elements, display or visibility issues, inconsistency, or problematic structure and form design. <em>E.g. the font is too small.</em></dd></div>
+        <div class="guide-item"><dt>Content</dt><dd>Information is unnecessary or missing, or terminology and dialogue are hard to understand. <em>E.g. does not understand an error message.</em></dd></div>
+        <div class="guide-item"><dt>Functionality</dt><dd>A function is missing or does not work as expected. <em>E.g. expects an option to choose how many items to load per page.</em></dd></div>
+    </dl>
+    <p class="guide-source">Source: Alhadreti &amp; Mayhew (2017). J. Usability Studies, 12(3).</p>
+</section>
+
+</div>
