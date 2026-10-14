@@ -1,12 +1,16 @@
 import os
 import json
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import FileResponse, Http404, JsonResponse
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Q
+from django.contrib import messages
+from django.db import IntegrityError
+from django.db.models import F, Q
 from django.utils import timezone
 
-from .models import Evaluacion, Anotacion, ProblemaIdentificado, SubjectProfile, Test_Input
+from .models import (Evaluacion, Anotacion, ProblemaIdentificado, CatalogoProblema, SubjectProfile, Test_Input,
+                     parse_mmss)
+from .forms import Test_InputForm
 
 
 @staff_member_required
@@ -122,11 +126,24 @@ def evaluar_video(request, payment_id, task_id):
         }
     )
 
+    # annotation_start_time: la primera vez que alguien abre el video para evaluarlo
+    cambios = []
+    if not evaluacion.fecha_inicio:
+        evaluacion.fecha_inicio = timezone.now()
+        cambios.append('fecha_inicio')
+    if not evaluacion.evaluador:
+        evaluacion.evaluador = request.user.get_username()
+        cambios.append('evaluador')
+    if cambios:
+        evaluacion.save(update_fields=cambios)
+
     try:
         profile = SubjectProfile.objects.get(payment_id=payment_id)
         worker_id = profile.workerId
     except SubjectProfile.DoesNotExist:
         worker_id = payment_id
+
+    evaluacion.video = video_label(evaluacion.video_id)
 
     context = {
         'active_page': 'videos',
@@ -135,6 +152,8 @@ def evaluar_video(request, payment_id, task_id):
         'worker_id': worker_id,
         'task_id': task_id,
         'video_files': video_files,
+        'video_label': evaluacion.video,
+        'evaluacion_lista': [evaluacion],
         'stats': get_stats(),
     }
     return render(request, 'evaluation/evaluar_video.html', context)
@@ -161,6 +180,28 @@ def campanas(request):
 
 
 @staff_member_required
+def crear_campana(request):
+    if request.method == 'POST':
+        form = Test_InputForm(request.POST)
+        if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, 'Campaign created successfully.')
+                return redirect('admin_campanas')
+            except IntegrityError:
+                form.add_error('campId', 'A campaign with this ID already exists.')
+    else:
+        form = Test_InputForm()
+
+    context = {
+        'active_page': 'campanas',
+        'form': form,
+        'stats': get_stats(),
+    }
+    return render(request, 'evaluation/crear_campana.html', context)
+
+
+@staff_member_required
 def reportes(request):
     videos = get_uploaded_videos()
     evaluaciones = Evaluacion.objects.filter(completada=True)
@@ -181,6 +222,62 @@ def reportes(request):
         'stats': get_stats(),
     }
     return render(request, 'evaluation/reportes.html', context)
+
+
+@staff_member_required
+def tabla_anotaciones(request):
+    """Vista tipo Excel: 1. Annotation table, 2. Problem table y resumen de problemas por video."""
+    evaluaciones = Evaluacion.objects.order_by('payment_id', 'task_id')
+    seleccion = request.GET.get('video', '')
+    if seleccion.isdigit():
+        evaluaciones = evaluaciones.filter(id=int(seleccion))
+
+    anotaciones = (Anotacion.objects.filter(evaluacion__in=evaluaciones)
+                   .select_related('evaluacion', 'problema_ref')
+                   .order_by('evaluacion__payment_id', 'evaluacion__task_id', 'start_time', 'id'))
+    problemas = (ProblemaIdentificado.objects.filter(evaluacion__in=evaluaciones)
+                 .select_related('evaluacion', 'problema')
+                 .order_by('evaluacion__payment_id', 'evaluacion__task_id', 'problema__codigo'))
+
+    for a in anotaciones:
+        a.video = video_label(a.evaluacion.video_id)
+    for p in problemas:
+        p.video = video_label(p.evaluacion.video_id)
+
+    # Resumen por video: cuantas veces aparece cada problema y promedio por problema
+    anot_por_eval, prob_por_eval = {}, {}
+    for a in anotaciones:
+        anot_por_eval.setdefault(a.evaluacion_id, []).append(a)
+    for p in problemas:
+        prob_por_eval.setdefault(p.evaluacion_id, []).append(p)
+
+    resumen_videos = []
+    for ev in evaluaciones:
+        filas, totales = resumen_problemas(anot_por_eval.get(ev.id, []), prob_por_eval.get(ev.id, []))
+        if not filas:
+            continue
+        resumen_videos.append({
+            'evaluacion': ev,
+            'video': video_label(ev.video_id),
+            'filas': filas,
+            'totales': totales,
+        })
+
+    tiempos = [ev for ev in evaluaciones if ev.fecha_inicio]
+    for ev in tiempos:
+        ev.video = video_label(ev.video_id)
+
+    context = {
+        'active_page': 'tabla',
+        'anotaciones': anotaciones,
+        'problemas': problemas,
+        'resumen_videos': resumen_videos,
+        'tiempos': tiempos,
+        'todas_evaluaciones': Evaluacion.objects.order_by('payment_id', 'task_id'),
+        'seleccion': seleccion,
+        'stats': get_stats(),
+    }
+    return render(request, 'evaluation/tabla_anotaciones.html', context)
 
 
 @staff_member_required
@@ -214,15 +311,100 @@ def serve_video(request, payment_id, task_id, date_folder, filename):
     return response
 
 
+def video_label(filename):
+    """Nombre del video como aparece en la columna video_id del Excel (sin extension)."""
+    return os.path.splitext(filename or '')[0]
+
+
+def anotacion_dict(a):
+    return {
+        'id': a.id,
+        'start_time': a.start_time,
+        'finish_time': a.finish_time,
+        'indicador': a.indicador,
+        'contexto': a.contexto,
+        'problema': a.problema,
+        'problema_id': a.problema_ref_id,
+        'comentarios': a.comentarios,
+    }
+
+
+def problema_dict(p):
+    return {
+        'id': p.id,
+        'problema_id': p.problema_id,
+        'codigo': p.problema.codigo,
+        'descripcion': p.problema.descripcion,
+        'severidad': p.severidad,
+        'tipo': p.tipo,
+        'comentarios': p.comentarios,
+    }
+
+
+def resumen_problemas(anotaciones, problemas_identificados=()):
+    """
+    Cuenta cuantas veces aparece cada problema en un conjunto de anotaciones.
+    Devuelve (filas, totales). Cada fila: codigo, descripcion, severidad, tipo,
+    ocurrencias, porcentaje y duracion promedio (segundos).
+    """
+    clasificacion = {p.problema_id: p for p in problemas_identificados}
+    grupos = {}
+    for a in anotaciones:
+        key = a.problema_ref_id or ('txt', a.problema.strip().lower())
+        g = grupos.setdefault(key, {
+            'codigo': a.problema_ref.codigo if a.problema_ref_id else '',
+            'descripcion': a.problema or '(no problem)',
+            'ocurrencias': 0,
+            'duraciones': [],
+        })
+        g['ocurrencias'] += 1
+        dur = a.duracion_segundos()
+        if dur is not None:
+            g['duraciones'].append(dur)
+
+    total = sum(g['ocurrencias'] for g in grupos.values())
+    filas = []
+    for key, g in grupos.items():
+        pi = clasificacion.get(key)
+        durs = g.pop('duraciones')
+        g['severidad'] = pi.severidad if pi else ''
+        g['tipo'] = pi.tipo if pi else ''
+        g['porcentaje'] = round(100.0 * g['ocurrencias'] / total, 1) if total else 0
+        g['duracion_promedio'] = round(sum(durs) / len(durs), 1) if durs else None
+        filas.append(g)
+    filas.sort(key=lambda f: (-f['ocurrencias'], f['codigo']))
+
+    distintos = len(filas)
+    totales = {
+        'anotaciones': total,
+        'problemas_distintos': distintos,
+        'promedio_por_problema': round(total / distintos, 2) if distintos else 0,
+    }
+    return filas, totales
+
+
+def validar_tiempos(start, finish):
+    if parse_mmss(start) is None:
+        return 'Start time must use the MM:SS format.'
+    if finish and parse_mmss(finish) is None:
+        return 'Finish time must use the MM:SS format (or be empty).'
+    if finish and parse_mmss(finish) < parse_mmss(start):
+        return 'Finish time cannot be before start time.'
+    return None
+
+
+def leer_json(request):
+    try:
+        return json.loads(request.body or b'{}')
+    except ValueError:
+        return None
+
+
 @staff_member_required
 def api_cargar_datos(request, evaluacion_id):
     evaluacion = get_object_or_404(Evaluacion, id=evaluacion_id)
-    anotaciones = list(evaluacion.anotaciones.values(
-        'id', 'start_time', 'finish_time', 'indicador', 'contexto', 'problema', 'comentarios'
-    ))
-    problemas = list(evaluacion.problemas.values(
-        'id', 'descripcion', 'severidad', 'tipo', 'comentarios'
-    ))
+    anotaciones = [anotacion_dict(a) for a in evaluacion.anotaciones.all()]
+    problemas = [problema_dict(p) for p in evaluacion.problemas.select_related('problema')]
     return JsonResponse({
         'anotaciones': anotaciones,
         'problemas': problemas,
@@ -235,7 +417,13 @@ def api_agregar_anotacion(request, evaluacion_id):
         return JsonResponse({'error': 'POST required'}, status=405)
 
     evaluacion = get_object_or_404(Evaluacion, id=evaluacion_id)
-    data = json.loads(request.body)
+    data = leer_json(request)
+    if data is None:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    catalogo_item = None
+    if data.get('problema_id'):
+        catalogo_item = get_object_or_404(CatalogoProblema, id=data['problema_id'])
 
     anotacion = Anotacion.objects.create(
         evaluacion=evaluacion,
@@ -244,9 +432,41 @@ def api_agregar_anotacion(request, evaluacion_id):
         indicador=data.get('indicador', ''),
         contexto=data.get('contexto', ''),
         problema=data.get('problema', ''),
+        problema_ref=catalogo_item,
         comentarios=data.get('comentarios', ''),
     )
-    return JsonResponse({'id': anotacion.id, 'ok': True})
+    return JsonResponse({'id': anotacion.id, 'ok': True, 'anotacion': anotacion_dict(anotacion)})
+
+
+@staff_member_required
+def api_editar_anotacion(request, anotacion_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    anotacion = get_object_or_404(Anotacion, id=anotacion_id)
+    data = leer_json(request)
+    if data is None:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    start = (data.get('start_time', anotacion.start_time) or '').strip()
+    finish = (data.get('finish_time', anotacion.finish_time) or '').strip()
+    error = validar_tiempos(start, finish)
+    if error:
+        return JsonResponse({'error': error}, status=400)
+
+    if 'problema_id' in data:
+        if data['problema_id']:
+            anotacion.problema_ref = get_object_or_404(CatalogoProblema, id=data['problema_id'])
+        else:
+            anotacion.problema_ref = None
+            anotacion.problema = ''
+    anotacion.start_time = start
+    anotacion.finish_time = finish
+    anotacion.indicador = data.get('indicador', anotacion.indicador)
+    anotacion.contexto = data.get('contexto', anotacion.contexto)
+    anotacion.comentarios = data.get('comentarios', anotacion.comentarios)
+    anotacion.save()
+    return JsonResponse({'ok': True, 'anotacion': anotacion_dict(anotacion)})
 
 
 @staff_member_required
@@ -260,6 +480,31 @@ def api_eliminar_anotacion(request, anotacion_id):
 
 
 @staff_member_required
+def api_catalogo_problemas(request):
+    catalogo = list(CatalogoProblema.objects.order_by('codigo').values('id', 'codigo', 'descripcion'))
+    return JsonResponse({'catalogo': catalogo})
+
+
+@staff_member_required
+def api_crear_problema(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    data = json.loads(request.body)
+    descripcion = (data.get('descripcion') or '').strip()
+    if not descripcion:
+        return JsonResponse({'error': 'Description is required'}, status=400)
+
+    catalogo_item = CatalogoProblema.objects.create(descripcion=descripcion)
+    return JsonResponse({
+        'id': catalogo_item.id,
+        'codigo': catalogo_item.codigo,
+        'descripcion': catalogo_item.descripcion,
+        'ok': True,
+    })
+
+
+@staff_member_required
 def api_agregar_problema(request, evaluacion_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
@@ -267,14 +512,59 @@ def api_agregar_problema(request, evaluacion_id):
     evaluacion = get_object_or_404(Evaluacion, id=evaluacion_id)
     data = json.loads(request.body)
 
+    if not data.get('problema_id'):
+        return JsonResponse({'error': 'problema_id is required'}, status=400)
+
+    catalogo_item = get_object_or_404(CatalogoProblema, id=data.get('problema_id'))
+
     problema = ProblemaIdentificado.objects.create(
         evaluacion=evaluacion,
-        descripcion=data.get('descripcion', ''),
+        problema=catalogo_item,
         severidad=data.get('severidad', ''),
         tipo=data.get('tipo', ''),
         comentarios=data.get('comentarios', ''),
     )
-    return JsonResponse({'id': problema.id, 'ok': True})
+    return JsonResponse({
+        'id': problema.id,
+        'codigo': catalogo_item.codigo,
+        'descripcion': catalogo_item.descripcion,
+        'ok': True,
+        'problema': problema_dict(problema),
+    })
+
+
+@staff_member_required
+def api_editar_problema(request, problema_id):
+    """Corrige un problema identificado: severidad, tipo, comentarios, problema del catalogo
+    y opcionalmente el texto del problema en el catalogo (se actualiza en todas sus anotaciones)."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    problema = get_object_or_404(ProblemaIdentificado.objects.select_related('problema'), id=problema_id)
+    data = leer_json(request)
+    if data is None:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    nuevo_id = data.get('problema_id')
+    if nuevo_id and str(nuevo_id) != str(problema.problema_id):
+        nuevo = get_object_or_404(CatalogoProblema, id=nuevo_id)
+        # Las anotaciones de este video que apuntaban al problema anterior pasan al nuevo
+        Anotacion.objects.filter(evaluacion=problema.evaluacion, problema_ref=problema.problema).update(
+            problema_ref=nuevo, problema=nuevo.descripcion)
+        problema.problema = nuevo
+
+    descripcion = (data.get('descripcion') or '').strip()
+    if descripcion and descripcion != problema.problema.descripcion:
+        catalogo_item = problema.problema
+        catalogo_item.descripcion = descripcion
+        catalogo_item.save()
+        catalogo_item.anotaciones.update(problema=descripcion)
+
+    problema.severidad = data.get('severidad', problema.severidad)
+    problema.tipo = data.get('tipo', problema.tipo)
+    problema.comentarios = data.get('comentarios', problema.comentarios)
+    problema.save()
+    return JsonResponse({'ok': True, 'problema': problema_dict(problema)})
 
 
 @staff_member_required
@@ -297,6 +587,30 @@ def api_completar_evaluacion(request, evaluacion_id):
 
     evaluacion.completada = True
     evaluacion.fecha_fin = timezone.now()
+    evaluacion.evaluador = evaluacion.evaluador or request.user.get_username()
     evaluacion.observaciones_generales = data.get('observaciones', '')
     evaluacion.save()
     return JsonResponse({'ok': True})
+
+
+# Tope por envio: el navegador reporta cada 30 s, asi un cliente roto no puede inflar el tiempo
+MAX_SEGUNDOS_POR_ENVIO = 120
+
+
+@staff_member_required
+def api_registrar_tiempo(request, evaluacion_id):
+    """Suma tiempo activo de anotacion. Recibe form-data (compatible con navigator.sendBeacon)."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        segundos = int(request.POST.get('segundos', 0))
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'segundos must be an integer'}, status=400)
+    segundos = max(0, min(segundos, MAX_SEGUNDOS_POR_ENVIO))
+
+    get_object_or_404(Evaluacion, id=evaluacion_id)
+    Evaluacion.objects.filter(id=evaluacion_id).update(
+        tiempo_activo_segundos=F('tiempo_activo_segundos') + segundos)
+    evaluacion = Evaluacion.objects.get(id=evaluacion_id)
+    return JsonResponse({'ok': True, 'tiempo_activo_segundos': evaluacion.tiempo_activo_segundos})

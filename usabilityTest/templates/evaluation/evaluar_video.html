@@ -13,6 +13,38 @@
     .annotations-table { max-height: 300px; overflow-y: auto; }
     .annotation-row:hover { background-color: #f8f9fa; cursor: pointer; }
     .annotation-row { transition: background-color 0.2s; }
+
+    .problem-combobox { position: relative; }
+    .cb-input-wrap { position: relative; }
+    .problem-combobox #formProblemText { padding-right: 62px; cursor: text; }
+    .cb-btn {
+        position: absolute; top: 0; height: 100%; width: 30px;
+        background: transparent; border: 0; color: var(--text-muted, #6c757d);
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        padding: 0; z-index: 2;
+    }
+    .cb-clear { right: 30px; font-size: 1.1em; }
+    .cb-toggle { right: 0; }
+    .cb-toggle i { transition: transform 0.15s ease; }
+    .problem-combobox.open .cb-toggle i { transform: rotate(180deg); }
+    .cb-btn:hover { color: var(--text, #212529); }
+    .cb-menu {
+        position: absolute; z-index: 1050; top: calc(100% + 2px); left: 0; right: 0;
+        max-height: 220px; overflow-y: auto;
+        background: var(--surface, #fff); border: 1px solid #ced4da; border-radius: 4px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+    .cb-item { padding: 0.45rem 0.75rem; cursor: pointer; font-size: 0.92rem; color: var(--text, #212529); }
+    .cb-item:hover, .cb-item.active { background: #e9ecef; }
+    .cb-empty { padding: 0.45rem 0.75rem; color: var(--text-muted, #6c757d); font-size: 0.9rem; }
+    .cb-create { color: #007bff; font-weight: 600; border-top: 1px solid #e9ecef; }
+    .cb-create i { margin-right: 6px; }
+    .cb-create:hover, .cb-create.active { background: #e7f1ff; color: #0056b3; }
+    .td-truncate { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    [data-theme="dark"] .cb-menu { background: var(--surface); border-color: #3a414f; }
+    [data-theme="dark"] .cb-item:hover, [data-theme="dark"] .cb-item.active { background: var(--surface-2); }
+    [data-theme="dark"] .cb-create { color: #60a5fa; border-top-color: var(--surface-2); }
+    [data-theme="dark"] .cb-create:hover, [data-theme="dark"] .cb-create.active { background: #1e3a5f; color: #93c5fd; }
 </style>
 {% endblock %}
 
@@ -24,6 +56,38 @@
             <h2 class="d-inline-block ml-3">Evaluate Video</h2>
         </div>
     </div>
+
+    <!-- Sheet tabs: same sheets as the Excel annotation file -->
+    <ul class="nav nav-tabs sheet-tabs" id="evalTabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#evaluate" role="tab">
+                <i class="fas fa-video"></i> Evaluate
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#annotation-table" role="tab">
+                1. Annotation table <span class="tab-count" id="sheetAnnCount">0</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#problem-table" role="tab">
+                2. Problem table <span class="tab-count" id="sheetProbCount">0</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#time-annotation" role="tab">
+                3. Time annotation
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#problem-summary" role="tab">
+                Problem summary
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+    <div class="tab-pane fade show active" id="evaluate" role="tabpanel">
 
     <!-- Row 1: Video Player (full width) -->
     <div class="row mb-4">
@@ -112,6 +176,9 @@
                             <span class="badge badge-warning">In Progress</span>
                         {% endif %}
                     </p>
+                    <p class="mb-1"><strong>Annotation time:</strong>
+                        <span class="time-display" id="activeTimer" title="Active time spent annotating this video. Paused while this browser tab is hidden.">{{ evaluacion.tiempo_activo_texto }}</span>
+                    </p>
                     <p class="text-muted mt-3">
                         Use the "Mark Start" and "Mark End" buttons to capture video timestamps.
                     </p>
@@ -120,7 +187,7 @@
         </div>
     </div>
 
-    <!-- Row 3: New Annotation Form + New Problem Form -->
+    <!-- Row 3: New Annotation Form + Register Problem Form -->
     <div class="row mt-4">
         <div class="col-md-6">
             <div class="card mb-4">
@@ -140,7 +207,23 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Indicator</label>
+                            <label for="formProblemText" id="formProblemLabel">Problem</label> <a href="#" class="help-link" data-open-guide="formulation" title="Guide: how to write a problem" aria-label="Open guide: how to write a problem"><i class="fas fa-question-circle"></i></a>
+                            <div class="problem-combobox" id="problemCombobox">
+                                <input type="hidden" id="formProblemId" value="">
+                                <div class="cb-input-wrap">
+                                    <input type="text" class="form-control" id="formProblemText"
+                                           placeholder="-- Select problem --" autocomplete="off"
+                                           role="combobox" aria-expanded="false" aria-controls="problemListbox"
+                                           aria-autocomplete="list" aria-labelledby="formProblemLabel">
+                                    <button type="button" class="cb-btn cb-clear" id="cbClear" title="Clear" aria-label="Clear" hidden>&times;</button>
+                                    <button type="button" class="cb-btn cb-toggle" id="cbToggle" tabindex="-1" aria-label="Show problem list"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>
+                                </div>
+                                <div class="cb-menu" id="problemListbox" role="listbox" aria-label="Problems" hidden></div>
+                            </div>
+                            <small class="text-muted">Select an existing problem or create a new one.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="formIndicator">Indicator</label> <a href="#" class="help-link" data-open-guide="indicators" title="Guide: indicators" aria-label="Open guide: indicators"><i class="fas fa-question-circle"></i></a>
                             <select class="form-control" id="formIndicator" required>
                                 <option value="">-- Select indicator --</option>
                                 <option value="ACT">ACT - Wrong action</option>
@@ -160,7 +243,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Task Context</label>
+                            <label for="formContext">Task Context</label> <a href="#" class="help-link" data-open-guide="moments" title="Guide: task moments" aria-label="Open guide: task moments"><i class="fas fa-question-circle"></i></a>
                             <select class="form-control" id="formContext" required>
                                 <option value="">-- Select context --</option>
                                 <option value="Qualification">Qualification</option>
@@ -172,10 +255,6 @@
                                 <option value="Payment">Payment</option>
                                 <option value="Help/Support/Feedback">Help/Support/Feedback</option>
                             </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Problem Description</label>
-                            <textarea class="form-control" id="formProblem" rows="3" placeholder="Describe the usability problem..."></textarea>
                         </div>
                         <div class="form-group">
                             <label>Comments</label>
@@ -197,11 +276,14 @@
                 <div class="card-body">
                     <form id="problemForm">
                         <div class="form-group">
-                            <label>Problem Description</label>
-                            <textarea class="form-control" id="problemDesc" rows="3" placeholder="Describe the identified problem..." required></textarea>
+                            <label>Problem</label>
+                            <select class="form-control" id="problemSelect" required>
+                                <option value="">-- Select problem --</option>
+                            </select>
+                            <small class="text-muted">Select an existing problem from the catalog.</small>
                         </div>
                         <div class="form-group">
-                            <label>Severity</label>
+                            <label>Severity</label> <a href="#" class="help-link" data-open-guide="severity" title="Guide: severity levels" aria-label="Open guide: severity levels"><i class="fas fa-question-circle"></i></a>
                             <div class="d-flex">
                                 <div class="form-check mr-3">
                                     <input class="form-check-input" type="radio" name="severity" id="sevCritical" value="Critical">
@@ -218,7 +300,7 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Type</label>
+                            <label>Type</label> <a href="#" class="help-link" data-open-guide="types" title="Guide: problem types" aria-label="Open guide: problem types"><i class="fas fa-question-circle"></i></a>
                             <select class="form-control" id="problemType" required>
                                 <option value="">-- Select type --</option>
                                 <option value="Navigation">Navigation</option>
@@ -255,6 +337,7 @@
                                     <th>#</th>
                                     <th>Start</th>
                                     <th>End</th>
+                                    <th>Problem</th>
                                     <th>Indicator</th>
                                     <th>Context</th>
                                     <th>Actions</th>
@@ -277,7 +360,7 @@
                         <table class="table table-sm table-hover mb-0">
                             <thead class="thead-light">
                                 <tr>
-                                    <th>#</th>
+                                    <th>Code</th>
                                     <th>Problem</th>
                                     <th>Severity</th>
                                     <th>Type</th>
@@ -304,8 +387,264 @@
         </div>
         <div class="col-md-4 d-flex align-items-center justify-content-center">
             <button class="btn btn-success btn-lg btn-block" id="btnComplete" type="button">
-                <i class="fas fa-check-circle"></i> Mark as Evaluated
+                <i class="fas fa-check"></i> Finish Evaluation
             </button>
+        </div>
+    </div>
+    </div><!-- /#evaluate -->
+
+    <!-- 1. Annotation table (same columns as the Excel sheet) -->
+    <div class="tab-pane fade" id="annotation-table" role="tabpanel">
+        <p class="text-muted">Every annotation you save is added here. Use <i class="fas fa-pen"></i> to correct a row.</p>
+        <div class="sheet-table-wrap">
+            <table class="table table-sm table-hover sheet-table">
+                <thead>
+                    <tr>
+                        <th>video_id</th>
+                        <th>start_time</th>
+                        <th>finish_time</th>
+                        <th>indicator_code</th>
+                        <th>task_moment</th>
+                        <th>problem</th>
+                        <th>comments</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="sheetAnnotations"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 2. Problem table -->
+    <div class="tab-pane fade" id="problem-table" role="tabpanel">
+        <p class="text-muted">Problems identified in this video. Use <i class="fas fa-pen"></i> to correct the problem, its severity or its type.</p>
+        <div class="sheet-table-wrap">
+            <table class="table table-sm table-hover sheet-table">
+                <thead>
+                    <tr>
+                        <th>code</th>
+                        <th>problem</th>
+                        <th>severity</th>
+                        <th>type</th>
+                        <th>comment</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="sheetProblems"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 3. Time annotation -->
+    <div class="tab-pane fade" id="time-annotation" role="tabpanel">
+        {% include "evaluation/_tabla_tiempos.html" with evaluaciones=evaluacion_lista %}
+    </div>
+
+    <!-- Summary: how many times each problem appears in this video -->
+    <div class="tab-pane fade" id="problem-summary" role="tabpanel">
+        <div class="summary-stats">
+            <div class="summary-stat">
+                <div class="label">Annotations</div>
+                <div class="value" id="sumTotal">0</div>
+            </div>
+            <div class="summary-stat">
+                <div class="label">Distinct problems</div>
+                <div class="value" id="sumDistinct">0</div>
+            </div>
+            <div class="summary-stat">
+                <div class="label">Average occurrences per problem</div>
+                <div class="value" id="sumAverage">0</div>
+            </div>
+        </div>
+        <div class="sheet-table-wrap">
+            <table class="table table-sm sheet-table">
+                <thead>
+                    <tr>
+                        <th>code</th>
+                        <th>problem</th>
+                        <th>severity</th>
+                        <th>type</th>
+                        <th class="num">occurrences</th>
+                        <th>% of annotations</th>
+                        <th class="num">avg duration (s)</th>
+                    </tr>
+                </thead>
+                <tbody id="sheetSummary"></tbody>
+            </table>
+        </div>
+    </div>
+    </div><!-- /.tab-content -->
+</div>
+
+<!-- Edit Annotation Modal -->
+<div class="modal fade" id="editAnnotationModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-pen"></i> Edit Annotation</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editAnnId">
+                <div class="form-row">
+                    <div class="form-group col-6">
+                        <label for="editAnnStart">start_time (MM:SS)</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="editAnnStart" placeholder="00:00">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary use-current-time" type="button" data-target="editAnnStart" title="Use current video time"><i class="fas fa-clock"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group col-6">
+                        <label for="editAnnFinish">finish_time (MM:SS)</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="editAnnFinish" placeholder="optional">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary use-current-time" type="button" data-target="editAnnFinish" title="Use current video time"><i class="fas fa-clock"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editAnnProblem">problem</label>
+                    <select class="form-control" id="editAnnProblem"></select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-6">
+                        <label for="editAnnIndicator">indicator_code</label>
+                        <select class="form-control" id="editAnnIndicator"></select>
+                    </div>
+                    <div class="form-group col-6">
+                        <label for="editAnnContext">task_moment</label>
+                        <select class="form-control" id="editAnnContext"></select>
+                    </div>
+                </div>
+                <div class="form-group mb-0">
+                    <label for="editAnnComments">comments</label>
+                    <textarea class="form-control" id="editAnnComments" rows="2"></textarea>
+                </div>
+                <div class="alert alert-danger mt-3 mb-0" id="editAnnError" hidden></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveEditAnnotation"><i class="fas fa-save"></i> Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Problem Modal -->
+<div class="modal fade" id="editProblemModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-pen"></i> Edit Problem</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editProbId">
+                <div class="form-group">
+                    <label for="editProbCatalog">Problem</label>
+                    <select class="form-control" id="editProbCatalog"></select>
+                    <small class="text-muted">Pick another problem if the wrong one was chosen. This video's annotations move with it.</small>
+                </div>
+                <div class="form-group">
+                    <label for="editProbName">Problem text</label>
+                    <textarea class="form-control" id="editProbName" rows="2"></textarea>
+                    <small class="text-muted">Fix a typo in the wording. The change applies everywhere this problem is used.</small>
+                </div>
+                <div class="form-group">
+                    <label>Severity</label> <a href="#" class="help-link" data-open-guide="severity" title="Guide: severity levels" aria-label="Open guide: severity levels"><i class="fas fa-question-circle"></i></a>
+                    <div class="d-flex">
+                        <div class="form-check mr-3">
+                            <input class="form-check-input" type="radio" name="editSeverity" id="editSevCritical" value="Critical">
+                            <label class="form-check-label" for="editSevCritical">Critical</label>
+                        </div>
+                        <div class="form-check mr-3">
+                            <input class="form-check-input" type="radio" name="editSeverity" id="editSevSerious" value="Serious">
+                            <label class="form-check-label" for="editSevSerious">Serious</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="editSeverity" id="editSevCosmetic" value="Cosmetic">
+                            <label class="form-check-label" for="editSevCosmetic">Cosmetic</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editProbType">Type</label>
+                    <select class="form-control" id="editProbType"></select>
+                </div>
+                <div class="form-group mb-0">
+                    <label for="editProbComments">Comment</label>
+                    <textarea class="form-control" id="editProbComments" rows="2"></textarea>
+                </div>
+                <div class="alert alert-danger mt-3 mb-0" id="editProbError" hidden></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveEditProblem"><i class="fas fa-save"></i> Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Register Problem Modal (opened from the annotation Problem dropdown) -->
+<div class="modal fade" id="registerProblemModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Register Problem</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">
+                    The identifier (<strong>PROB-XXX</strong>) is generated automatically when the problem is created.
+                </p>
+                <div class="form-group">
+                    <label for="regProblemName">Problem name <span style="color:#dc3545;">*</span></label>
+                    <input type="text" class="form-control" id="regProblemName" placeholder="Problem name...">
+                </div>
+                <div class="form-group">
+                    <label>Severity</label> <a href="#" class="help-link" data-open-guide="severity" title="Guide: severity levels" aria-label="Open guide: severity levels"><i class="fas fa-question-circle"></i></a>
+                    <div class="d-flex">
+                        <div class="form-check mr-3">
+                            <input class="form-check-input" type="radio" name="regSeverity" id="regSevCritical" value="Critical">
+                            <label class="form-check-label" for="regSevCritical">Critical</label>
+                        </div>
+                        <div class="form-check mr-3">
+                            <input class="form-check-input" type="radio" name="regSeverity" id="regSevSerious" value="Serious" checked>
+                            <label class="form-check-label" for="regSevSerious">Serious</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="regSeverity" id="regSevCosmetic" value="Cosmetic">
+                            <label class="form-check-label" for="regSevCosmetic">Cosmetic</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="regProblemType">Type</label> <a href="#" class="help-link" data-open-guide="types" title="Guide: problem types" aria-label="Open guide: problem types"><i class="fas fa-question-circle"></i></a>
+                    <select class="form-control" id="regProblemType">
+                        <option value="">-- Select type --</option>
+                        <option value="Navigation">Navigation</option>
+                        <option value="Layout">Layout</option>
+                        <option value="Content">Content</option>
+                        <option value="Functionality">Functionality</option>
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label for="regProblemComments">Comments</label>
+                    <textarea class="form-control" id="regProblemComments" rows="2" placeholder="Additional comments..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="btnSaveRegisterProblem">
+                    <i class="fas fa-save"></i> Save Problem
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -317,6 +656,7 @@
     var EVAL_ID = {{ evaluacion.id }};
     var CSRF_TOKEN = '{{ csrf_token }}';
     var API_BASE = '/admin-panel/api';
+    var VIDEO_LABEL = '{{ video_label|escapejs }}';
 
     var video = document.getElementById('videoPlayer');
     var currentTimeEl = document.getElementById('currentTime');
@@ -329,6 +669,191 @@
 
     var annotations = [];
     var problems = [];
+    var catalog = [];
+    var problemSelect = document.getElementById('problemSelect');
+
+    function fillProblemSelect(selectedId) {
+        var current = selectedId !== undefined && selectedId !== null ? selectedId : problemSelect.value;
+        problemSelect.innerHTML = '<option value="">-- Select problem --</option>';
+        catalog.forEach(function(c) {
+            var opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.descripcion;
+            problemSelect.appendChild(opt);
+        });
+        if (current) problemSelect.value = current;
+    }
+
+    function loadCatalog(selectedId) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', API_BASE + '/catalogo-problemas/', true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                catalog = JSON.parse(xhr.responseText).catalogo;
+                fillProblemSelect(selectedId);
+                renderSummary();
+            }
+        };
+        xhr.send();
+    }
+
+    function escHtml(str) {
+        return String(str === null || str === undefined ? '' : str)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // ---- Searchable Problem combobox (New Annotation form) ----
+    var cbBox = document.getElementById('problemCombobox');
+    var cbText = document.getElementById('formProblemText');
+    var cbId = document.getElementById('formProblemId');
+    var cbMenu = document.getElementById('problemListbox');
+    var cbClear = document.getElementById('cbClear');
+    var cbToggle = document.getElementById('cbToggle');
+    var cbActive = -1;
+
+    function openCb() {
+        renderCbMenu();
+        cbMenu.hidden = false;
+        cbBox.classList.add('open');
+        cbText.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeCb() {
+        cbMenu.hidden = true;
+        cbBox.classList.remove('open');
+        cbText.setAttribute('aria-expanded', 'false');
+        cbActive = -1;
+    }
+
+    function cbFiltering() {
+        return !cbId.value && cbText.value.trim() !== '';
+    }
+
+    function renderCbMenu() {
+        var q = cbFiltering() ? cbText.value.trim().toLowerCase() : '';
+        var matches = catalog.filter(function(c) {
+            if (!q) return true;
+            return c.descripcion.toLowerCase().indexOf(q) === 0 || c.codigo.toLowerCase().indexOf(q) === 0;
+        });
+
+        cbMenu.innerHTML = '';
+
+        if (matches.length === 0) {
+            var empty = document.createElement('div');
+            empty.className = 'cb-empty';
+            empty.textContent = q ? 'No results found.' : 'No problems yet. Type to create one.';
+            cbMenu.appendChild(empty);
+        }
+
+        matches.forEach(function(c) {
+            var item = document.createElement('div');
+            item.className = 'cb-item';
+            item.setAttribute('role', 'option');
+            item.textContent = c.descripcion;
+            item._activate = function() { selectProblem(c); };
+            item.addEventListener('mousedown', function(e) { e.preventDefault(); item._activate(); });
+            cbMenu.appendChild(item);
+        });
+
+        var typed = cbText.value.trim();
+        var create = document.createElement('div');
+        create.className = 'cb-item cb-create';
+        create.setAttribute('role', 'option');
+        create.innerHTML = '<i class="fas fa-plus" aria-hidden="true"></i> Create new problem' +
+            (typed ? ': &quot;' + escHtml(typed) + '&quot;' : '');
+        create._activate = function() { openRegisterModal(typed); };
+        create.addEventListener('mousedown', function(e) { e.preventDefault(); create._activate(); });
+        cbMenu.appendChild(create);
+
+        cbActive = -1;
+    }
+
+    function selectProblem(c) {
+        cbId.value = c.id;
+        cbText.value = c.descripcion;
+        cbClear.hidden = false;
+        closeCb();
+    }
+
+    function resetProblemCb() {
+        cbId.value = '';
+        cbText.value = '';
+        cbClear.hidden = true;
+        closeCb();
+    }
+
+    function openRegisterModal(prefill) {
+        var nameInput = document.getElementById('regProblemName');
+        nameInput.value = prefill || '';
+        closeCb();
+        var $modal = $('#registerProblemModal');
+        $modal.one('shown.bs.modal', function() {
+            nameInput.focus();
+            if (prefill) nameInput.select();
+        });
+        $modal.modal('show');
+    }
+
+    cbText.addEventListener('focus', function() {
+        if (cbId.value) cbText.select();
+        openCb();
+    });
+
+    cbText.addEventListener('blur', function() {
+        closeCb();
+    });
+
+    cbText.addEventListener('input', function() {
+        if (cbId.value) cbId.value = '';
+        cbClear.hidden = cbText.value === '';
+        if (cbMenu.hidden) openCb(); else renderCbMenu();
+    });
+
+    cbText.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { closeCb(); return; }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            if (cbMenu.hidden) { openCb(); e.preventDefault(); return; }
+            var items = cbMenu.querySelectorAll('.cb-item');
+            if (!items.length) return;
+            e.preventDefault();
+            if (cbActive >= 0 && items[cbActive]) items[cbActive].classList.remove('active');
+            cbActive += (e.key === 'ArrowDown' ? 1 : -1);
+            if (cbActive < 0) cbActive = items.length - 1;
+            if (cbActive >= items.length) cbActive = 0;
+            items[cbActive].classList.add('active');
+            items[cbActive].scrollIntoView({ block: 'nearest' });
+            return;
+        }
+        if (e.key === 'Enter' && !cbMenu.hidden) {
+            var list = cbMenu.querySelectorAll('.cb-item');
+            if (cbFiltering() && list.length) {
+                e.preventDefault();
+                list[cbActive >= 0 ? cbActive : 0]._activate();
+            } else if (cbActive >= 0 && list[cbActive]) {
+                e.preventDefault();
+                list[cbActive]._activate();
+            }
+        }
+    });
+
+    cbClear.addEventListener('mousedown', function(e) { e.preventDefault(); });
+    cbClear.addEventListener('click', function() {
+        cbId.value = '';
+        cbText.value = '';
+        cbClear.hidden = true;
+        openCb();
+    });
+
+    cbToggle.addEventListener('mousedown', function(e) { e.preventDefault(); });
+    cbToggle.addEventListener('click', function() {
+        if (cbMenu.hidden) { cbText.focus(); openCb(); }
+        else closeCb();
+    });
+
+    document.addEventListener('mousedown', function(e) {
+        if (!cbBox.contains(e.target)) closeCb();
+    });
 
     function formatTime(seconds) {
         var mins = Math.floor(seconds / 60);
@@ -351,11 +876,38 @@
                 if (xhr.status === 200) {
                     callback(null, JSON.parse(xhr.responseText));
                 } else {
-                    callback('Error: ' + xhr.status);
+                    var msg = 'Error: ' + xhr.status;
+                    try { msg = JSON.parse(xhr.responseText).error || msg; } catch (e) {}
+                    callback(msg);
                 }
             }
         };
         xhr.send(JSON.stringify(data));
+    }
+
+    function toAnnotation(a) {
+        return {
+            id: a.id,
+            startTime: a.start_time,
+            endTime: a.finish_time,
+            indicator: a.indicador,
+            context: a.contexto,
+            problem: a.problema,
+            problemId: a.problema_id,
+            comments: a.comentarios
+        };
+    }
+
+    function toProblem(p) {
+        return {
+            id: p.id,
+            problemId: p.problema_id,
+            codigo: p.codigo,
+            description: p.descripcion,
+            severity: p.severidad,
+            type: p.tipo,
+            comments: p.comentarios
+        };
     }
 
     function loadData() {
@@ -364,26 +916,8 @@
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 var data = JSON.parse(xhr.responseText);
-                annotations = data.anotaciones.map(function(a) {
-                    return {
-                        id: a.id,
-                        startTime: a.start_time,
-                        endTime: a.finish_time,
-                        indicator: a.indicador,
-                        context: a.contexto,
-                        problem: a.problema,
-                        comments: a.comentarios
-                    };
-                });
-                problems = data.problemas.map(function(p) {
-                    return {
-                        id: p.id,
-                        description: p.descripcion,
-                        severity: p.severidad,
-                        type: p.tipo,
-                        comments: p.comentarios
-                    };
-                });
+                annotations = data.anotaciones.map(toAnnotation);
+                problems = data.problemas.map(toProblem);
                 renderAnnotations();
                 renderProblems();
             }
@@ -413,28 +947,32 @@
         var indicator = document.getElementById('formIndicator').value;
         var context = document.getElementById('formContext').value;
 
-        if (!indicator || !context) {
-            alert('Select an indicator and context.');
+        if (!cbId.value || !indicator || !context) {
+            alert('Select a problem, an indicator and a context.');
+            if (!cbId.value) { cbText.focus(); openCb(); }
             return;
         }
 
         var data = {
             start_time: formStartTime.value,
             finish_time: formEndTime.value,
+            problema: cbText.value.trim(),
+            problema_id: parseInt(cbId.value),
             indicador: indicator,
             contexto: context,
-            problema: document.getElementById('formProblem').value,
             comentarios: document.getElementById('formComments').value
         };
 
         apiPost(API_BASE + '/' + EVAL_ID + '/anotacion/', data, function(err, res) {
             if (!err && res.ok) {
-                data.id = res.id;
-                annotations.push(data);
+                annotations.push(toAnnotation(res.anotacion));
                 renderAnnotations();
                 document.getElementById('annotationForm').reset();
+                resetProblemCb();
                 formStartTime.value = '00:00';
                 formEndTime.value = '00:00';
+            } else {
+                alert(err || 'Error saving annotation.');
             }
         });
     });
@@ -442,17 +980,17 @@
     document.getElementById('problemForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
-        var desc = document.getElementById('problemDesc').value;
+        var problemId = parseInt(problemSelect.value);
         var severity = document.querySelector('input[name="severity"]:checked');
         var type = document.getElementById('problemType').value;
 
-        if (!desc || !severity || !type) {
-            alert('Fill in all required fields.');
+        if (!problemId || !severity || !type) {
+            alert('Select a problem, severity and type.');
             return;
         }
 
         var data = {
-            descripcion: desc,
+            problema_id: problemId,
             severidad: severity.value,
             tipo: type,
             comentarios: document.getElementById('problemComments').value
@@ -460,12 +998,52 @@
 
         apiPost(API_BASE + '/' + EVAL_ID + '/problema/', data, function(err, res) {
             if (!err && res.ok) {
-                data.id = res.id;
-                problems.push(data);
+                problems.push(toProblem(res.problema));
                 renderProblems();
                 document.getElementById('problemForm').reset();
                 document.getElementById('sevSerious').checked = true;
+            } else {
+                alert(err || 'Error saving problem.');
             }
+        });
+    });
+
+    document.getElementById('btnSaveRegisterProblem').addEventListener('click', function() {
+        var name = document.getElementById('regProblemName').value.trim();
+        var type = document.getElementById('regProblemType').value;
+        var sev = document.querySelector('input[name="regSeverity"]:checked');
+        var comments = document.getElementById('regProblemComments').value;
+
+        if (!name) { alert('Enter the problem name.'); return; }
+        if (!type) { alert('Select the problem type.'); return; }
+
+        apiPost(API_BASE + '/catalogo-problemas/crear/', { descripcion: name }, function(err, res) {
+            if (err) { alert(err || 'Error creating problem.'); return; }
+
+            apiPost(API_BASE + '/' + EVAL_ID + '/problema/', {
+                problema_id: res.id,
+                severidad: sev.value,
+                tipo: type,
+                comentarios: comments
+            }, function(err2, res2) {
+                if (err2) { alert(err2 || 'Error registering problem.'); return; }
+
+                loadCatalog();
+
+                problems.push(toProblem(res2.problema));
+                renderProblems();
+
+                cbId.value = res.id;
+                cbText.value = res.descripcion;
+                cbClear.hidden = false;
+                closeCb();
+
+                document.getElementById('regProblemName').value = '';
+                document.getElementById('regProblemType').value = '';
+                document.getElementById('regProblemComments').value = '';
+                document.getElementById('regSevSerious').checked = true;
+                $('#registerProblemModal').modal('hide');
+            });
         });
     });
 
@@ -479,6 +1057,22 @@
         });
     });
 
+    function sevBadge(severity) {
+        if (!severity) return '-';
+        var cls = severity === 'Critical' ? 'danger' : (severity === 'Serious' ? 'warning' : 'secondary');
+        return '<span class="badge badge-' + cls + '">' + escHtml(severity) + '</span>';
+    }
+
+    function timeLink(t) {
+        if (!t) return '';
+        return '<a href="#" class="jump-to-time" data-time="' + escHtml(t) + '">' + escHtml(t) + '</a>';
+    }
+
+    function actionButtons(kind, id) {
+        return '<button class="btn btn-sm btn-outline-primary edit-' + kind + ' mr-1" data-id="' + id + '" title="Edit"><i class="fas fa-pen"></i></button>' +
+               '<button class="btn btn-sm btn-danger delete-' + kind + '" data-id="' + id + '" title="Delete"><i class="fas fa-trash"></i></button>';
+    }
+
     function renderAnnotations() {
         var tbody = document.getElementById('annotationsList');
         tbody.innerHTML = '';
@@ -489,13 +1083,16 @@
             row.className = 'annotation-row';
             row.innerHTML =
                 '<td>' + (index + 1) + '</td>' +
-                '<td><a href="#" class="jump-to-time" data-time="' + ann.startTime + '">' + ann.startTime + '</a></td>' +
-                '<td><a href="#" class="jump-to-time" data-time="' + ann.endTime + '">' + ann.endTime + '</a></td>' +
-                '<td><span class="badge badge-info">' + ann.indicator + '</span></td>' +
-                '<td>' + ann.context + '</td>' +
-                '<td><button class="btn btn-sm btn-danger delete-annotation" data-id="' + ann.id + '"><i class="fas fa-trash"></i></button></td>';
+                '<td>' + timeLink(ann.startTime) + '</td>' +
+                '<td>' + timeLink(ann.endTime) + '</td>' +
+                '<td class="td-truncate" title="' + escHtml(ann.problem) + '">' + escHtml(ann.problem) + '</td>' +
+                '<td><span class="badge badge-info">' + escHtml(ann.indicator) + '</span></td>' +
+                '<td>' + escHtml(ann.context) + '</td>' +
+                '<td class="actions-cell">' + actionButtons('annotation', ann.id) + '</td>';
             tbody.appendChild(row);
         });
+        renderAnnotationSheet();
+        renderSummary();
     }
 
     function renderProblems() {
@@ -503,22 +1100,243 @@
         tbody.innerHTML = '';
         document.getElementById('problemCount').textContent = problems.length;
 
-        problems.forEach(function(prob, index) {
+        problems.forEach(function(prob) {
             var row = document.createElement('tr');
-            var sevClass = prob.severity === 'Critical' ? 'danger' : (prob.severity === 'Serious' ? 'warning' : 'secondary');
             row.innerHTML =
-                '<td>' + (index + 1) + '</td>' +
-                '<td>' + prob.description + '</td>' +
-                '<td><span class="badge badge-' + sevClass + '">' + prob.severity + '</span></td>' +
-                '<td>' + prob.type + '</td>' +
-                '<td><button class="btn btn-sm btn-danger delete-problem" data-id="' + prob.id + '"><i class="fas fa-trash"></i></button></td>';
+                '<td><span class="badge badge-dark">' + escHtml(prob.codigo) + '</span></td>' +
+                '<td>' + escHtml(prob.description) + '</td>' +
+                '<td>' + sevBadge(prob.severity) + '</td>' +
+                '<td>' + escHtml(prob.type) + '</td>' +
+                '<td class="actions-cell">' + actionButtons('problem', prob.id) + '</td>';
             tbody.appendChild(row);
         });
+        renderProblemSheet();
+        renderSummary();
     }
 
-    document.getElementById('annotationsList').addEventListener('click', function(e) {
+    // ---- Sheet tabs (same columns as the Excel file) ----
+    function renderAnnotationSheet() {
+        var tbody = document.getElementById('sheetAnnotations');
+        document.getElementById('sheetAnnCount').textContent = annotations.length;
+        if (!annotations.length) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No annotations yet.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = annotations.map(function(ann) {
+            return '<tr>' +
+                '<td class="video-cell" title="' + escHtml(VIDEO_LABEL) + '">' + escHtml(VIDEO_LABEL) + '</td>' +
+                '<td class="mono">' + timeLink(ann.startTime) + '</td>' +
+                '<td class="mono">' + timeLink(ann.endTime) + '</td>' +
+                '<td><span class="badge badge-info">' + escHtml(ann.indicator) + '</span></td>' +
+                '<td>' + escHtml(ann.context) + '</td>' +
+                '<td class="wrap">' + escHtml(ann.problem) + '</td>' +
+                '<td class="wrap">' + escHtml(ann.comments) + '</td>' +
+                '<td class="actions-cell">' + actionButtons('annotation', ann.id) + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    function renderProblemSheet() {
+        var tbody = document.getElementById('sheetProblems');
+        document.getElementById('sheetProbCount').textContent = problems.length;
+        if (!problems.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No problems registered yet.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = problems.map(function(prob) {
+            return '<tr>' +
+                '<td><span class="badge badge-dark">' + escHtml(prob.codigo) + '</span></td>' +
+                '<td class="wrap">' + escHtml(prob.description) + '</td>' +
+                '<td>' + sevBadge(prob.severity) + '</td>' +
+                '<td>' + escHtml(prob.type) + '</td>' +
+                '<td class="wrap">' + escHtml(prob.comments) + '</td>' +
+                '<td class="actions-cell">' + actionButtons('problem', prob.id) + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    // How many times each problem appears in this video, and the average per problem
+    function renderSummary() {
+        var groups = {};
+        var order = [];
+        annotations.forEach(function(ann) {
+            var key = ann.problemId ? 'id:' + ann.problemId : 'txt:' + (ann.problem || '').trim().toLowerCase();
+            if (!groups[key]) {
+                var cat = ann.problemId ? catalog.filter(function(c) { return c.id === ann.problemId; })[0] : null;
+                var reg = ann.problemId ? problems.filter(function(p) { return p.problemId === ann.problemId; })[0] : null;
+                groups[key] = {
+                    codigo: cat ? cat.codigo : (reg ? reg.codigo : ''),
+                    description: ann.problem || '(no problem)',
+                    severity: reg ? reg.severity : '',
+                    type: reg ? reg.type : '',
+                    count: 0,
+                    durations: []
+                };
+                order.push(key);
+            }
+            var g = groups[key];
+            g.count++;
+            var ini = parseTime(ann.startTime), fin = ann.endTime ? parseTime(ann.endTime) : NaN;
+            if (!isNaN(ini) && !isNaN(fin) && fin >= ini) g.durations.push(fin - ini);
+        });
+
+        var total = annotations.length;
+        var distinct = order.length;
+        document.getElementById('sumTotal').textContent = total;
+        document.getElementById('sumDistinct').textContent = distinct;
+        document.getElementById('sumAverage').textContent = distinct ? (Math.round(total / distinct * 100) / 100) : 0;
+
+        var rows = order.map(function(k) { return groups[k]; });
+        rows.sort(function(a, b) { return b.count - a.count || a.codigo.localeCompare(b.codigo); });
+
+        var tbody = document.getElementById('sheetSummary');
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No annotations yet.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(function(g) {
+            var pct = total ? Math.round(g.count / total * 1000) / 10 : 0;
+            var avgDur = g.durations.length
+                ? Math.round(g.durations.reduce(function(s, d) { return s + d; }, 0) / g.durations.length * 10) / 10
+                : '-';
+            return '<tr>' +
+                '<td>' + (g.codigo ? '<span class="badge badge-dark">' + escHtml(g.codigo) + '</span>' : '') + '</td>' +
+                '<td class="wrap">' + escHtml(g.description) + '</td>' +
+                '<td>' + sevBadge(g.severity) + '</td>' +
+                '<td>' + (escHtml(g.type) || '-') + '</td>' +
+                '<td class="num"><strong>' + g.count + '</strong></td>' +
+                '<td><div class="d-flex align-items-center">' +
+                    '<div class="occ-bar flex-grow-1 mr-2"><span style="width:' + pct + '%"></span></div>' +
+                    '<span class="num">' + pct + '%</span></div></td>' +
+                '<td class="num">' + avgDur + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    // ---- Edit modals ----
+    function fillSelect(select, items, valueOf, labelOf, selected, placeholder) {
+        select.innerHTML = placeholder ? '<option value="">' + escHtml(placeholder) + '</option>' : '';
+        items.forEach(function(it) {
+            var opt = document.createElement('option');
+            opt.value = valueOf(it);
+            opt.textContent = labelOf(it);
+            select.appendChild(opt);
+        });
+        select.value = selected === null || selected === undefined ? '' : String(selected);
+    }
+
+    function copyOptions(fromId, toSelect, selected) {
+        toSelect.innerHTML = document.getElementById(fromId).innerHTML;
+        toSelect.value = selected || '';
+    }
+
+    function showModalError(id, msg) {
+        var el = document.getElementById(id);
+        el.textContent = msg || '';
+        el.hidden = !msg;
+    }
+
+    function openEditAnnotation(id) {
+        var ann = annotations.filter(function(a) { return a.id === id; })[0];
+        if (!ann) return;
+        document.getElementById('editAnnId').value = ann.id;
+        document.getElementById('editAnnStart').value = ann.startTime || '';
+        document.getElementById('editAnnFinish').value = ann.endTime || '';
+        fillSelect(document.getElementById('editAnnProblem'), catalog,
+            function(c) { return c.id; }, function(c) { return c.codigo + ' - ' + c.descripcion; },
+            ann.problemId, '-- Select problem --');
+        copyOptions('formIndicator', document.getElementById('editAnnIndicator'), ann.indicator);
+        copyOptions('formContext', document.getElementById('editAnnContext'), ann.context);
+        document.getElementById('editAnnComments').value = ann.comments || '';
+        showModalError('editAnnError', '');
+        $('#editAnnotationModal').modal('show');
+    }
+
+    function openEditProblem(id) {
+        var prob = problems.filter(function(p) { return p.id === id; })[0];
+        if (!prob) return;
+        document.getElementById('editProbId').value = prob.id;
+        fillSelect(document.getElementById('editProbCatalog'), catalog,
+            function(c) { return c.id; }, function(c) { return c.codigo + ' - ' + c.descripcion; },
+            prob.problemId);
+        document.getElementById('editProbName').value = prob.description || '';
+        var sev = document.querySelector('input[name="editSeverity"][value="' + prob.severity + '"]');
+        document.querySelectorAll('input[name="editSeverity"]').forEach(function(r) { r.checked = false; });
+        if (sev) sev.checked = true;
+        copyOptions('problemType', document.getElementById('editProbType'), prob.type);
+        document.getElementById('editProbComments').value = prob.comments || '';
+        showModalError('editProbError', '');
+        $('#editProblemModal').modal('show');
+    }
+
+    // Switching the catalog problem shows that problem's text for editing
+    document.getElementById('editProbCatalog').addEventListener('change', function() {
+        var id = parseInt(this.value);
+        var cat = catalog.filter(function(c) { return c.id === id; })[0];
+        document.getElementById('editProbName').value = cat ? cat.descripcion : '';
+    });
+
+    document.querySelectorAll('.use-current-time').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.getElementById(btn.getAttribute('data-target')).value = formatTime(video.currentTime);
+        });
+    });
+
+    document.getElementById('btnSaveEditAnnotation').addEventListener('click', function() {
+        var id = parseInt(document.getElementById('editAnnId').value);
+        var problemId = parseInt(document.getElementById('editAnnProblem').value);
+        var data = {
+            start_time: document.getElementById('editAnnStart').value.trim(),
+            finish_time: document.getElementById('editAnnFinish').value.trim(),
+            problema_id: problemId || null,
+            indicador: document.getElementById('editAnnIndicator').value,
+            contexto: document.getElementById('editAnnContext').value,
+            comentarios: document.getElementById('editAnnComments').value
+        };
+        if (!problemId || !data.indicador || !data.contexto) {
+            showModalError('editAnnError', 'Select a problem, an indicator and a task moment.');
+            return;
+        }
+        apiPost(API_BASE + '/anotacion/' + id + '/editar/', data, function(err, res) {
+            if (err) { showModalError('editAnnError', err); return; }
+            annotations = annotations.map(function(a) { return a.id === id ? toAnnotation(res.anotacion) : a; });
+            annotations.sort(function(a, b) { return parseTime(a.startTime) - parseTime(b.startTime) || a.id - b.id; });
+            renderAnnotations();
+            $('#editAnnotationModal').modal('hide');
+        });
+    });
+
+    document.getElementById('btnSaveEditProblem').addEventListener('click', function() {
+        var id = parseInt(document.getElementById('editProbId').value);
+        var sev = document.querySelector('input[name="editSeverity"]:checked');
+        var data = {
+            problema_id: parseInt(document.getElementById('editProbCatalog').value),
+            descripcion: document.getElementById('editProbName').value.trim(),
+            severidad: sev ? sev.value : '',
+            tipo: document.getElementById('editProbType').value,
+            comentarios: document.getElementById('editProbComments').value
+        };
+        if (!data.problema_id || !data.descripcion || !data.severidad || !data.tipo) {
+            showModalError('editProbError', 'Problem, text, severity and type are required.');
+            return;
+        }
+        apiPost(API_BASE + '/problema/' + id + '/editar/', data, function(err) {
+            if (err) { showModalError('editProbError', err); return; }
+            $('#editProblemModal').modal('hide');
+            // The problem text or the linked annotations may have changed: reload everything
+            loadCatalog();
+            loadData();
+        });
+    });
+
+    // ---- Row actions (lists in the Evaluate tab and the sheet tabs share them) ----
+    function onAnnotationTableClick(e) {
+        var edit = e.target.closest('.edit-annotation');
+        if (edit) { openEditAnnotation(parseInt(edit.getAttribute('data-id'))); return; }
+
         var target = e.target.closest('.delete-annotation');
         if (target) {
+            if (!window.confirm('Delete this annotation?')) return;
             var id = parseInt(target.getAttribute('data-id'));
             apiPost(API_BASE + '/anotacion/' + id + '/eliminar/', {}, function(err) {
                 if (!err) {
@@ -532,15 +1350,19 @@
         var jumpLink = e.target.closest('.jump-to-time');
         if (jumpLink) {
             e.preventDefault();
-            var timeStr = jumpLink.getAttribute('data-time');
-            video.currentTime = parseTime(timeStr);
+            $('#evalTabs a[href="#evaluate"]').tab('show');
+            video.currentTime = parseTime(jumpLink.getAttribute('data-time'));
             video.play();
         }
-    });
+    }
 
-    document.getElementById('problemsList').addEventListener('click', function(e) {
+    function onProblemTableClick(e) {
+        var edit = e.target.closest('.edit-problem');
+        if (edit) { openEditProblem(parseInt(edit.getAttribute('data-id'))); return; }
+
         var target = e.target.closest('.delete-problem');
         if (target) {
+            if (!window.confirm('Delete this problem from the video?')) return;
             var id = parseInt(target.getAttribute('data-id'));
             apiPost(API_BASE + '/problema/' + id + '/eliminar/', {}, function(err) {
                 if (!err) {
@@ -549,6 +1371,19 @@
                 }
             });
         }
+    }
+
+    document.getElementById('annotationsList').addEventListener('click', onAnnotationTableClick);
+    document.getElementById('sheetAnnotations').addEventListener('click', onAnnotationTableClick);
+    document.getElementById('problemsList').addEventListener('click', onProblemTableClick);
+    document.getElementById('sheetProblems').addEventListener('click', onProblemTableClick);
+
+    // Open a sheet tab directly from a link (e.g. #annotation-table from the Annotation Table page)
+    if (location.hash && document.querySelector('#evalTabs a[href="' + location.hash + '"]')) {
+        $('#evalTabs a[href="' + location.hash + '"]').tab('show');
+    }
+    $('#evalTabs a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+        history.replaceState(null, '', e.target.getAttribute('href'));
     });
 
     var selectors = document.querySelectorAll('.video-selector');
@@ -561,6 +1396,50 @@
         });
     });
 
+    // ---- Active annotation time (sheet "3. Time annotation") ----
+    // Counts only while this browser tab is visible; sent to the server every 30 s
+    // and when the page is hidden or closed (sendBeacon survives page unload).
+    var activeSeconds = {{ evaluacion.tiempo_activo_segundos }};
+    var pendingSeconds = 0;
+    var TIME_URL = API_BASE + '/' + EVAL_ID + '/tiempo/';
+    var activeTimerEls = [document.getElementById('activeTimer')]
+        .concat(Array.prototype.slice.call(document.querySelectorAll('#time-annotation [data-active-time]')));
+
+    function formatHMS(total) {
+        var h = Math.floor(total / 3600), m = Math.floor(total % 3600 / 60), s = total % 60;
+        return [h, m, s].map(function(n) { return String(n).padStart(2, '0'); }).join(':');
+    }
+
+    function flushActiveTime(onUnload) {
+        if (!pendingSeconds) return;
+        var sent = pendingSeconds;
+        pendingSeconds = 0;
+        var form = new FormData();
+        form.append('segundos', sent);
+        form.append('csrfmiddlewaretoken', CSRF_TOKEN);
+        if (onUnload && navigator.sendBeacon) {
+            navigator.sendBeacon(TIME_URL, form);
+            return;
+        }
+        fetch(TIME_URL, { method: 'POST', body: form, credentials: 'same-origin' })
+            .then(function(r) { if (!r.ok) pendingSeconds += sent; })
+            .catch(function() { pendingSeconds += sent; });
+    }
+
+    setInterval(function() {
+        if (document.visibilityState !== 'visible') return;
+        activeSeconds++;
+        pendingSeconds++;
+        var text = formatHMS(activeSeconds);
+        activeTimerEls.forEach(function(el) { if (el) el.textContent = text; });
+    }, 1000);
+    setInterval(function() { flushActiveTime(false); }, 30000);
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') flushActiveTime(true);
+    });
+    window.addEventListener('pagehide', function() { flushActiveTime(true); });
+
+    loadCatalog();
     loadData();
 })();
 </script>

@@ -67,11 +67,14 @@
             <tr>
                 <td>
                     {{ video.worker_id }}
-                    <button class="btn btn-sm btn-outline-secondary copy-btn ml-2" onclick="navigator.clipboard.writeText('{{ video.worker_id }}')">Copy</button>
+                    <button class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="Copy" aria-label="Copy" onclick="navigator.clipboard.writeText('{{ video.worker_id }}')"><i class="fas fa-copy" aria-hidden="true"></i></button>
                 </td>
                 <td>{{ video.task_id }}</td>
                 <td>{{ video.date }}</td>
-                <td>{{ video.filename }}</td>
+                <td>
+                    {{ video.filename|slice:"1:-5" }}
+                    <button class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="Copy" aria-label="Copy" onclick='navigator.clipboard.writeText("{{ video.filename|slice:"1:-5" }}")'><i class="fas fa-copy" aria-hidden="true"></i></button>
+                </td>
                 <td>
                     {% if video.evaluada %}
                         <span class="status-badge status-completada">Completed</span>

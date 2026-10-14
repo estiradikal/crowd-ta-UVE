@@ -4,33 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Admin Panel{% endblock %}</title>
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('admin-theme');
+                if (t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="/static/css/admin_panel.css">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Header -->
-    <header class="admin-header">
-        <button class="btn-hamburger" id="btnToggleSidebar">
-            <i class="fas fa-bars"></i>
-        </button>
-        <h1 class="header-title">Admin Panel</h1>
-        <div class="header-right">
-            <button class="btn-icon">
-                <i class="fas fa-bell"></i>
-            </button>
-            <div class="user-avatar">
-                <i class="fas fa-user-circle"></i>
-                <span>Administrator</span>
-            </div>
-        </div>
-    </header>
-
     <div class="admin-container">
         <!-- Sidebar -->
         <aside class="admin-sidebar" id="sidebar">
-            <nav class="sidebar-nav">
+            <button class="sidebar-handle" id="btnCollapse" title="Collapse menu">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+
+            <div class="sidebar-profile" id="sidebarProfile">
+                <div class="profile-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="profile-info">
+                    <span class="profile-name">{{ user.get_full_name|default:user.username|default:"Administrator" }}</span>
+                    <span class="profile-role">Admin</span>
+                </div>
+                <button class="profile-chevron" id="btnProfileMenu" title="Account">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="profile-menu" id="profileMenu">
+                    <a href="/admin-panel/config/"><i class="fas fa-cog"></i> Settings</a>
+                    <form method="post" action="/logout/">
+                        {% csrf_token %}
+                        <button type="submit"><i class="fas fa-sign-out-alt"></i> Log out</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="sidebar-search">
+                <input type="text" id="sidebarSearch" placeholder="Search dashboard" autocomplete="off">
+                <i class="fas fa-search"></i>
+            </div>
+
+            <nav class="sidebar-nav" id="sidebarNav">
                 <a href="/admin-panel/" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
                     <i class="fas fa-chart-bar"></i>
                     <span>Dashboard</span>
@@ -38,6 +63,10 @@
                 <a href="/admin-panel/videos/" class="nav-item {% if active_page == 'videos' %}active{% endif %}">
                     <i class="fas fa-video"></i>
                     <span>Videos</span>
+                </a>
+                <a href="/admin-panel/tabla-anotaciones/" class="nav-item {% if active_page == 'tabla' %}active{% endif %}">
+                    <i class="fas fa-table"></i>
+                    <span>Annotation Table</span>
                 </a>
                 <a href="/admin-panel/campanas/" class="nav-item {% if active_page == 'campanas' %}active{% endif %}">
                     <i class="fas fa-clipboard-list"></i>
@@ -47,53 +76,236 @@
                     <i class="fas fa-chart-line"></i>
                     <span>Reports</span>
                 </a>
-                <a href="/admin-panel/guia/" class="nav-item {% if active_page == 'guia' %}active{% endif %}">
-                    <i class="fas fa-book"></i>
-                    <span>Evaluation Guide</span>
-                </a>
+
+                <hr class="sidebar-divider">
+
+                <div class="nav-row">
+                    <a href="/admin-panel/guia/" class="nav-item {% if active_page == 'guia' %}active{% endif %}">
+                        <i class="fas fa-book"></i>
+                        <span>Evaluation Guide</span>
+                    </a>
+                    <button type="button" class="nav-row-action" id="btnOpenGuide"
+                            title="Open guide in a side panel (?)" aria-label="Open evaluation guide panel"
+                            aria-controls="guideDrawer" aria-expanded="false">
+                        <i class="fas fa-book-open"></i>
+                    </button>
+                </div>
                 <a href="/admin-panel/config/" class="nav-item {% if active_page == 'config' %}active{% endif %}">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
+
+                <p class="nav-empty" id="navEmpty">No results found</p>
             </nav>
 
-            <div class="sidebar-summary">
-                <h3>Summary</h3>
-                <div class="summary-item">
-                    <span class="summary-label">Pending videos</span>
-                    <span class="summary-value text-warning">{{ stats.pendientes|default:"0" }}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Evaluated videos</span>
-                    <span class="summary-value text-success">{{ stats.evaluados|default:"0" }}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Campaigns</span>
-                    <span class="summary-value text-info">{{ stats.campanas|default:"0" }}</span>
-                </div>
+            <div class="sidebar-footer">
+                <button class="footer-btn" id="btnTheme" title="Toggle dark mode" type="button">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <a class="footer-btn" href="/admin-panel/config/" title="Settings" type="button">
+                    <i class="fas fa-cog"></i>
+                </a>
+                <form method="post" action="/logout/">
+                    {% csrf_token %}
+                    <button class="footer-btn" type="submit" title="Log out">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </form>
             </div>
         </aside>
 
         <!-- Main Content -->
         <main class="admin-main">
+            {% if messages %}
+            <div class="admin-messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
             {% block content %}{% endblock %}
         </main>
     </div>
 
+    <!-- Evaluation guide side panel: opens over any page without leaving it (the video keeps playing) -->
+    <div class="guide-backdrop" id="guideBackdrop" hidden></div>
+    <aside class="guide-drawer" id="guideDrawer" role="dialog" aria-modal="true" aria-labelledby="guideDrawerTitle" aria-hidden="true">
+        <header class="guide-drawer-header">
+            <div class="guide-drawer-title">
+                <i class="fas fa-book-open"></i>
+                <h5 id="guideDrawerTitle">Evaluation Guide</h5>
+                <a href="/admin-panel/guia/" class="guide-fullpage" title="Open as full page"><i class="fas fa-external-link-alt"></i></a>
+                <button type="button" class="guide-close" id="btnCloseGuide" aria-label="Close guide">&times;</button>
+            </div>
+            <div class="guide-search">
+                <i class="fas fa-search"></i>
+                <input type="search" id="guideSearch" placeholder="Search the guide (e.g. PUZZ, Training, Layout)" autocomplete="off">
+            </div>
+            <nav class="guide-chips" id="guideChips">
+                <button type="button" data-target="workflow">How to</button>
+                <button type="button" data-target="indicators">Indicators</button>
+                <button type="button" data-target="moments">Task moments</button>
+                <button type="button" data-target="formulation">Writing problems</button>
+                <button type="button" data-target="severity">Severity</button>
+                <button type="button" data-target="types">Types</button>
+            </nav>
+        </header>
+        <div class="guide-drawer-body" id="guideBody">
+            {% include "evaluation/_guia_contenido.html" %}
+            <p class="guide-noresults" id="guideNoResults" hidden>No matches in the guide.</p>
+        </div>
+    </aside>
+
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Toggle sidebar
-        document.getElementById('btnToggleSidebar').addEventListener('click', function() {
+        (function () {
             var sidebar = document.getElementById('sidebar');
-            var main = document.querySelector('.admin-main');
-            sidebar.classList.toggle('collapsed');
-            if (sidebar.classList.contains('collapsed')) {
-                main.style.marginLeft = '70px';
-            } else {
-                main.style.marginLeft = '240px';
+
+            // Collapse / expand
+            function toggleSidebar() {
+                sidebar.classList.toggle('collapsed');
             }
-        });
+            document.getElementById('btnCollapse').addEventListener('click', toggleSidebar);
+
+            // Dark mode
+            var themeBtn = document.getElementById('btnTheme');
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                }
+                var icon = themeBtn.querySelector('i');
+                icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+            applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+            themeBtn.addEventListener('click', function () {
+                var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                applyTheme(next);
+                try { localStorage.setItem('admin-theme', next); } catch (e) {}
+            });
+
+            // Profile dropdown
+            var profileMenu = document.getElementById('profileMenu');
+            document.getElementById('btnProfileMenu').addEventListener('click', function (e) {
+                e.stopPropagation();
+                profileMenu.classList.toggle('open');
+            });
+            document.addEventListener('click', function (e) {
+                if (!profileMenu.contains(e.target)) profileMenu.classList.remove('open');
+            });
+
+            // Search filter
+            var search = document.getElementById('sidebarSearch');
+            var items = Array.prototype.slice.call(document.querySelectorAll('#sidebarNav .nav-item'));
+            var divider = document.querySelector('.sidebar-divider');
+            var empty = document.getElementById('navEmpty');
+            search.addEventListener('input', function () {
+                var q = search.value.trim().toLowerCase();
+                var visible = 0;
+                items.forEach(function (item) {
+                    var match = item.textContent.toLowerCase().indexOf(q) !== -1;
+                    var row = item.parentElement.classList.contains('nav-row') ? item.parentElement : item;
+                    row.style.display = match ? '' : 'none';
+                    if (match) visible++;
+                });
+                empty.style.display = visible === 0 ? 'block' : 'none';
+                if (divider) divider.style.display = q ? 'none' : '';
+            });
+
+            // ---- Evaluation guide side panel ----
+            var drawer = document.getElementById('guideDrawer');
+            var backdrop = document.getElementById('guideBackdrop');
+            var openBtn = document.getElementById('btnOpenGuide');
+            var guideBody = document.getElementById('guideBody');
+            var guideSearch = document.getElementById('guideSearch');
+            var noResults = document.getElementById('guideNoResults');
+            var lastFocus = null;
+
+            function isOpen() { return drawer.classList.contains('open'); }
+
+            function goToSection(name) {
+                var section = guideBody.querySelector('[data-guide-section="' + name + '"]');
+                if (!section) return;
+                guideBody.scrollTo({ top: section.offsetTop - 8, behavior: 'smooth' });
+                section.classList.remove('flash');
+                void section.offsetWidth;  // restart the highlight animation
+                section.classList.add('flash');
+            }
+
+            function openGuide(section) {
+                lastFocus = document.activeElement;
+                // An open Bootstrap modal traps focus and would block typing in the guide search;
+                // Bootstrap re-installs this handler the next time a modal is shown.
+                if (window.jQuery) jQuery(document).off('focusin.bs.modal');
+                backdrop.hidden = false;
+                drawer.classList.add('open');
+                drawer.setAttribute('aria-hidden', 'false');
+                openBtn.setAttribute('aria-expanded', 'true');
+                if (section) {
+                    guideSearch.value = '';
+                    filterGuide('');
+                    setTimeout(function () { goToSection(section); }, 200);
+                }
+                setTimeout(function () { guideSearch.focus({ preventScroll: true }); }, 50);
+            }
+
+            function closeGuide() {
+                drawer.classList.remove('open');
+                drawer.setAttribute('aria-hidden', 'true');
+                openBtn.setAttribute('aria-expanded', 'false');
+                backdrop.hidden = true;
+                if (lastFocus && lastFocus.focus) lastFocus.focus();
+            }
+
+            function filterGuide(q) {
+                q = q.trim().toLowerCase();
+                var anyVisible = false;
+                guideBody.querySelectorAll('.guide-section').forEach(function (section) {
+                    var sectionHit = false;
+                    section.querySelectorAll('.guide-item').forEach(function (item) {
+                        var hit = !q || item.textContent.toLowerCase().indexOf(q) !== -1;
+                        item.hidden = !hit;
+                        if (hit) sectionHit = true;
+                    });
+                    section.hidden = !sectionHit;
+                    if (sectionHit) anyVisible = true;
+                });
+                noResults.hidden = anyVisible;
+            }
+
+            window.openGuide = openGuide;
+            openBtn.addEventListener('click', function () { isOpen() ? closeGuide() : openGuide(); });
+            document.getElementById('btnCloseGuide').addEventListener('click', closeGuide);
+            backdrop.addEventListener('click', closeGuide);
+            guideSearch.addEventListener('input', function () { filterGuide(guideSearch.value); });
+            document.getElementById('guideChips').addEventListener('click', function (e) {
+                var chip = e.target.closest('button[data-target]');
+                if (!chip) return;
+                guideSearch.value = '';
+                filterGuide('');
+                goToSection(chip.getAttribute('data-target'));
+            });
+
+            // Contextual help: any element with data-open-guide="<section>" opens the panel at that section
+            document.addEventListener('click', function (e) {
+                var trigger = e.target.closest('[data-open-guide]');
+                if (!trigger) return;
+                e.preventDefault();
+                openGuide(trigger.getAttribute('data-open-guide'));
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && isOpen()) { closeGuide(); return; }
+                var el = document.activeElement;
+                var typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+                if (e.key === '?' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                    e.preventDefault();
+                    isOpen() ? closeGuide() : openGuide();
+                }
+            });
+        })();
     </script>
     {% block extra_js %}{% endblock %}
 </body>
