@@ -1,0 +1,307 @@
+{% extends "main_templates/base.html" %}
+{% load static%}
+{% load crispy_forms_filters %}
+{% block custom_styles %}
+<link rel="stylesheet" type="text/css" href="{% static '/css/main.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static '/css/stepper.css' %}">
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+{% endblock %}
+
+{% block page_content %}
+<input type="hidden" id="taskid" value="{{task.task_id}}">
+<input type="hidden" id="totaltasks" value="{{task_count}}">
+<input type="hidden" id="taskopts" value="{{options}}">
+
+<div class="task-container">
+  <div id="ifr-rec" class="row">
+
+    <div class="col-3 cam-right" style="padding-right: 5px;">
+      <div class="stepper">
+        <!-- previous tasks -->
+        <div class="prev-task">
+          {%if task.task_id|add:"0" > 1 %}
+          {% for i in "x"|rjust:task.task_id|add:"0" %}
+          {%if forloop.counter < task.task_id|add:"0" %}
+          <div class="step step-done">
+            <div>
+              <div class="circle"> {{forloop.counter }}</div>
+            </div>
+            <div>
+              <div class="title">Task {{forloop.counter }} <i class="fa fa-check-circle-o" aria-hidden="true"></i></div>
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+          {% endif%}
+        </div>
+        <!-- current task -->
+        <div class="curr-task">
+          <div class="step step-active">
+            <div>
+              <div class="circle"> {{task.task_id }}</div>
+            </div>
+            <div>
+              <div class="title">Task {{task.task_id }} <i class="fa fa-check-circle-o" style="display: none;"
+                  aria-hidden="true"></i></div>
+            </div>
+            <div class="cam-stream" style="display: none;">
+              <video id="cam" playsinline autoplay muted width="220" height="220"></video>
+              <button id="cam-status" data-id="camera" value="on" class="camcoder"><span data-id="camera"></span><i
+                  class="fa fa-camera" data-id="camera" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="step step-active">
+            <div>
+              <div class="circle subcircle">{{task.task_id}}.1</div>
+            </div>
+            <div class="title" data-toggle="collapse" href="#collapsetask" aria-expanded="true">Find the course with
+              following criteria<i class="fa fa-check-circle-o" style="display: none;" aria-hidden="true"></i>
+            </div>
+            <div class="taskInfo collapse" id="collapsetask" aria-expanded="true">
+              <p><br>
+                {{task.task_description|safe}}
+              </p>
+              <span class="btn btn-primary" data-id="Start Task" id="startrec"> Start Task</span>
+              <div class="TaskDone" style="display: none;">Are you done?
+                <span class="btn btn-primary" data-toggle="collapse" href="#collapsetaskques" role="button"
+                  id="TaskDone" data-id="Answer Task" aria-expanded="false">
+                  Continue</span>
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div>
+              <div class="circle subcircle">{{task.task_id}}.2</div>
+            </div>
+            <div class="title">Answer question<i class="fa fa-check-circle-o" style="display: none;"
+                aria-hidden="true"></i></div>
+            <div class="taskQ" style="display: none;">
+
+              <div class="collapsetaskques collapse" id="collapsetaskques">
+                <div class="card card-body noborder">
+                  <form action="#">{% csrf_token %}
+                    <div class="form-group">
+
+                      <p>{{task.task_valid_question | safe}}</p>
+                    </div>
+                    
+                    <div class="form-check">
+                      <input class="taskQ ui-widget ui-autocomplete-input" type="text" name="taskq" id="taskq" required="required">
+                    
+                    
+                    <button type="submit" id="finishTask" data-id="Finish Task" class="btn btn-primary"
+                      >Continue</button></div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div>
+              <div class="circle subcircle">{{task.task_id}}.3</div>
+            </div>
+            <div>
+              <div class="title">Review and finish task<i class="fa fa-check-circle-o" style="display: none;"
+                  aria-hidden="true"></i>
+              </div>
+            </div>
+            <div>
+              <p id="reviewInfo" style="display: none;"> Review the video of your session on the right. <br><br>
+                Are you satisfied?&emsp;<a class="btn btn-primary btn-sm" role="button" id="goToNextTask"
+                  data-id="Next Task">
+                  <span data-id="Next Task"></span>
+                </a><br><br> If not&emsp;<button class="btn btn-secondary btn-sm" id="redoTask"
+                  data-id="Repeat Task">Repeat Task</button> </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- next steps -->
+
+        <div class="next-task">
+          {%if task.task_id|add:"0" <= task_count|add:"0" %}
+          {%if task.task_id|add:"0" == task_count|add:"0" %}
+          <div class="step">
+            <div>
+              <div class="circle">&check;</div>
+            </div>
+            <div>
+              <div class="title">Pament Id</div>
+            </div>
+          </div>
+          {% elif task.task_id|add:"0" < task_count|add:"0" %}
+          <div class="step">
+            <div>
+              <div class="circle">{{task.task_id|add:"1"}}</div>
+            </div>
+            <div>
+              <div class="title">Task {{task.task_id|add:"1"}}</div>
+            </div>
+          </div>
+          {% endif %}
+          {% endif %}
+        </div>
+
+      </div>
+      <a class="float" data-toggle="collapse" class="btn btn-primary" href="#helpandinstructions" role="button"
+        aria-expanded="false" aria-controls="helpandinstructions"><strong>Help</strong>
+        <i class="fa fa-question-circle"></i>
+      </a>
+      <div class="helpandinstructions collapse" id="helpandinstructions" aria-hidden="false">
+        <div class="card card-body">
+          <span class="btn btn-light" data-id="open instructions" data-toggle="modal" data-target="#instructionModel"><i
+              class="fa fa-info-circle" aria-hidden="true"></i> General Instructions</span>
+          <span class="btn btn-light" data-toggle="modal" data-id="open mock video" data-target="#mockSessionModel"><i
+              class="fa fa-play" aria-hidden="true"></i> Mock Session Video</span>
+          <span class="title">Contact Us</span><a id="contactUs" href="mailto:ta.crowdsource@gmail.com?subject=Micro_workerId:{{ request.session.mwid }}" data-toggle="tooltip"
+            data-placement="bottom" title="ta.crowdsource@gmail.com">
+            <i class="fa fa-envelope" aria-label="Email"></i> xyz@abc.com</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-9 cam-left" id="ifr-dsp" style="display: none;">
+      <iframe src="https://www.edx.org/" id="iframe"></iframe>
+
+      <div class="recorded-output" data-id="review" style="display: none;">
+
+        <div class="wrapper">
+          <strong>
+            <h5>Session Review</h5>
+          </strong> <br>
+          <video class="video" id="recorded" data-id="review" width="220" height="220" webkit-playsinline controls></video>
+          <div class="playpause"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- task instructions model -->
+
+<!-- Modal -->
+<div class="modal fade" id="taskModel" tabindex="-1" role="dialog" aria-labelledby="taskModel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">Instructions</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true" data-id="close instructions">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>{{task.task_description | safe}}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-id="close instructions" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- general instructions model -->
+
+<!-- Modal -->
+<div class="modal fade" id="instructionModel" tabindex="-1" role="dialog" aria-labelledby="instructionModel"
+  aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">Instructions</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true" data-id="close instructions">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <iframe
+          src="https://docs.google.com/document/d/e/2PACX-1vT0-hQ-uLyiNucMANjnicGlXq69n8MJ6oL0K3nM2xf3qTLQEtQcq62dxAxbmQSQIeC31VqA9eHk3SCt/pub?embedded=true"
+          width="100%" height="500px" frameborder="0"></iframe>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-id="close instructions" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- mock session model -->
+
+<!-- Modal -->
+<div class="modal fade" id="mockSessionModel" tabindex="-1" role="dialog" aria-labelledby="mockSessionModel"
+  aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">Sample Session</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true" data-id="close video">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <iframe src="https://www.youtube.com/embed/5lcu3ig7IX4" width="100%" height="300" frameborder="0"
+          allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-id="close video" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- notification -->
+<div id="notify">
+  <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
+    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+      <span aria-hidden="true" data-id="close notification">&times;</span>
+    </button>
+    <div class="toast-body" style="background-color: rgb(10, 168, 57);">
+      <strong class="mr-auto">
+        <h5 style="color:white; text-align: center;"> Please, keep talking!</h5>
+      </strong>
+
+    </div>
+  </div>
+</div>
+
+
+
+<!-- upload notification -->
+
+<div id="load" style="display: none;">
+  <div class="loading">
+    <p><img src="{%static '/img/load.gif' %}" width="20%" alt="loading...">
+      Please wait, while uploading..</p>
+  </div>
+</div>
+
+
+{% endblock %}
+
+{% block custom_scripts %}
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="{% static '/js/mediarecoder.js' %}" type="text/javascript"></script>
+<script src="{% static '/js/soundmeter.js' %}" type="text/javascript"></script>
+<script src="{% static '/js/tasksinfomanager.js' %}" type="text/javascript"></script>
+<script src="{% static '/js/positiontracker.js' %}" type="text/javascript"></script>
+<script>
+
+$( function() {
+
+    var availableOptions = $("#taskopts").val();
+    availableOptions = availableOptions.split("|");
+    $( "#taskq" ).autocomplete({
+       minLength: 4,
+      source: availableOptions
+    });
+  } );
+</script>
+{% endblock %}ss

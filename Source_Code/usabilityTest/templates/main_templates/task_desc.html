@@ -1,0 +1,15 @@
+{% extends "main_templates/base.html" %}
+{% load static %}
+{% block page_content %}
+
+<div class="col-6 container">
+  <h2>Task {{task_id}}</h2>
+  <div class="item active">
+    <p>{{task_desc | safe}}</p>
+  </div>
+
+  <p> <strong>Note: </strong> Please Allow permissions for Screenshare, Mic and Camera for the task to start.</p>
+  <a class="btn btn-primary" href="{% url 'test_page' task_id %}" role="button">Go to Task</a>
+</div>
+
+{% endblock %}
