@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.exceptions import PermissionDenied
 from .forms import SubjectProfileForm
-from .models import SubjectProfile, TaskInfo, ClickInfo, TasksDescription, TaskStatus, Approved_Testers, Test_Input
+from .models import SubjectProfile, TaskInfo, ClickInfo, TasksDescription, TaskStatus, Approved_Testers, Test_Input, InstructionsPage
 from django.http import JsonResponse, Http404
 from django.core.files.storage import FileSystemStorage
 from datetime import date
@@ -30,6 +30,10 @@ def json_serializer(input_data):
     json_obj = serializers.serialize('json', input_data)
     return json.loads(json_obj)
 
+def get_instructions_md(key="general_instructions"):
+    """Devuelve el contenido de instrucciones (Markdown) almacenado en la BD."""
+    return InstructionsPage.objects.filter(key=key).values_list("content_md", flat=True).first() or ""
+
 # --- Vistas ---
 def user_registration(request):
     if 'payid' in request.session:
@@ -47,7 +51,8 @@ def main_page(request, task_id):
         info = {
             'task': task,
             'task_count': get_total_tasks(),
-            'options': task.valid_ans_options
+            'options': task.valid_ans_options,
+            'instructions_md': get_instructions_md(),
         }
         return render(request, 'main_templates/recordmedia.html', info)
     else:
@@ -104,14 +109,8 @@ def update_task_answers(request):
         return JsonResponse({'failure': 'Session expired'}, status=403)
     
     taskinfo, created = TaskInfo.objects.get_or_create(test_id=testid, task_id=taskid)
-    if created:
-        TaskInfo.objects.filter(test_id=testid, task_id=taskid).update(task_ans=ans)
-    else:
-        obj = TaskInfo.objects.filter(test_id=testid, task_id=taskid)
-        json_obj = json_serializer(obj)
-        current_answer = json_obj[0]['fields']['task_ans']
-        new_answer = current_answer + ',' + ans
-        TaskInfo.objects.filter(test_id=testid, task_id=taskid).update(task_ans=new_answer)
+    taskinfo.task_ans = ans if created else (taskinfo.task_ans or '') + ',' + ans
+    taskinfo.save()
     return JsonResponse({'success': 'User response stored successfully'})
 
 def update_clicks(request):
@@ -126,68 +125,45 @@ def update_clicks(request):
         return JsonResponse({'failure': 'Session expired'}, status=403)
     
     clickinfo, created = ClickInfo.objects.get_or_create(test_id=testid, task_id=taskid)
-    if created:
-        ClickInfo.objects.filter(test_id=testid, task_id=taskid).update(click_info=click_info)
-    else:
-        obj = ClickInfo.objects.filter(test_id=testid, task_id=taskid)
-        json_obj = json_serializer(obj)
-        current_info = json_obj[0]['fields']['click_info']
-        new_info = current_info + ',' + click_info
-        ClickInfo.objects.filter(test_id=testid, task_id=taskid).update(click_info=new_info)
+    clickinfo.click_info = click_info if created else (clickinfo.click_info or '') + ',' + click_info
+    clickinfo.save()
     return JsonResponse({'success': 'Click info stored successfully'})
 
 def ins_page(request):
-    # Si la URL ya tiene parámetros, usarlos, sino generarlos
+    # Valores por defecto fijos cuando no vienen en la URL
+    DEFAULT_WORKER = 'DEMO2'
+    DEFAULT_CAMP = 'demo'
+    DEFAULT_GROUP = '1'
+
+    # Obtener parámetros de la URL
     worker_id = request.GET.get('workerId')
     camp_id = request.GET.get('campId')
     group_id = request.GET.get('groupId')
 
-    # Si NO hay parámetros, generamos nuevos valores
+    # Si falta alguno, redirigir con los valores por defecto fijos
     if not (worker_id and camp_id and group_id):
-        # Generar workerId, campId, groupId como antes
-        last_worker = SubjectProfile.objects.order_by('-workerId').first()
-        if last_worker and last_worker.workerId:
-            try:
-                next_worker = int(last_worker.workerId) + 1
-            except:
-                next_worker = 1
-        else:
-            next_worker = 1
+        return redirect(
+            f'/index/?groupId={DEFAULT_GROUP}&campId={DEFAULT_CAMP}&workerId={DEFAULT_WORKER}'
+        )
 
-        last_camp = SubjectProfile.objects.order_by('-campId').first()
-        if last_camp and last_camp.campId:
-            try:
-                next_camp = int(last_camp.campId) + 1
-            except:
-                next_camp = 1
-        else:
-            next_camp = 1
-
-        group_id = '1'
-        worker_id = str(next_worker)
-        camp_id = str(next_camp)
-
-        # Redirigir a la misma URL pero con los parámetros
-        return redirect(f'/index/?groupId={group_id}&campId={camp_id}&workerId={worker_id}')
-
-    # Si la URL YA tiene parámetros, usarlos (sin redirigir)
     # Guardar en sesión
     request.session['workerId'] = worker_id
     request.session['campId'] = camp_id
     request.session['groupId'] = group_id
 
-    # Generar payment_id (si no existe o si es nuevo)
+    # Generar payment_id
     secret_key = "#####SHOULD_BE_REPLACED#####"
     payId = hashlib.sha256((camp_id + worker_id + secret_key).encode('utf-8')).hexdigest()
     payId = "mw-" + payId
     request.session['payid'] = payId
 
-    # Mostrar la página de instrucciones (sin redirigir)
+    # Renderizar página de instrucciones
     context = {
         'workerId': worker_id,
         'campId': camp_id,
         'groupId': group_id,
-        'payId': payId
+        'payId': payId,
+        'instructions_md': get_instructions_md(),
     }
     return render(request, 'main_templates/instructions.html', context)
 
@@ -227,7 +203,6 @@ def upload_media(request):
         return JsonResponse({'failure': 'Session expired'}, status=403)
     
     # Adaptar ruta para Windows (o usar una carpeta local)
-    # En lugar de /home/rgalda/..., usamos una carpeta dentro del proyecto
     base_upload_dir = os.path.join(os.path.dirname(__file__), 'uploads')
     folder = os.path.join(base_upload_dir, payId, taskid, str(date.today()))
     if not os.path.exists(folder):
@@ -236,7 +211,6 @@ def upload_media(request):
     fs = FileSystemStorage(location=folder)
     filename = f'_{payId}.webm'
     filename = fs.save(filename, myfile)
-    # file_url = fs.url(filename)  # No necesario para JsonResponse
     return JsonResponse({'success': 'Media uploaded successfully'})
 
 def Update_Test_Status(request):
@@ -257,22 +231,19 @@ def Update_Test_Status(request):
             task_score = 0
 
         # Obtener respuestas esperadas
-        valid_answers = get_task_answers(taskId)  # devuelve lista
+        valid_answers = get_task_answers(taskId)
 
+        status, _ = TaskStatus.objects.get_or_create(subject_id=payId)
+        task_status = "True" if task_answer in valid_answers else "False"
         if taskId == "1":
-            task_status = "True" if task_answer in valid_answers else "False"
-            TaskStatus.objects.filter(subject_id=payId).update(
-                task_1_valid_question=task_status,
-                task_1_time=task_time,
-                task_1_score=task_score
-            )
+            status.task_1_valid_question = task_status
+            status.task_1_time = task_time
+            status.task_1_score = task_score
         elif taskId == "2":
-            task_status = "True" if task_answer in valid_answers else "False"
-            TaskStatus.objects.filter(subject_id=payId).update(
-                task_2_valid_question=task_status,
-                task_2_time=task_time,
-                task_2_score=task_score
-            )
+            status.task_2_valid_question = task_status
+            status.task_2_time = task_time
+            status.task_2_score = task_score
+        status.save()
 
         return JsonResponse({'success': 'status updated'})
     else:

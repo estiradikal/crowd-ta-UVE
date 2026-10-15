@@ -18,8 +18,18 @@ $(document).ready(function () {
   };
 
   const videoConstraints = {
-    video: true,
+    video: {
+      // prioriza y fija la pestana actual como unica fuente valida
+      displaySurface: 'browser',
+      selfBrowserSurface: 'include',
+      surfaceSwitching: 'exclude',
+      preferCurrentTab: true,
+    },
     audio: false,
+    systemAudio: 'exclude',
+    selfBrowserSurface: 'include',
+    surfaceSwitching: 'exclude',
+    monitorTypeSurfaces: 'exclude',
   };
 
   const startTaskRec = document.querySelector('span#startrec');
@@ -281,6 +291,15 @@ $(document).ready(function () {
     }
     try {
       let screenStream = await navigator.mediaDevices.getDisplayMedia(videoSettings);
+
+      const settings = screenStream.getVideoTracks()[0].getSettings();
+      if (settings.displaySurface && settings.displaySurface !== 'browser') {
+        screenStream.getTracks().forEach(function (t) { t.stop(); });
+        alert("Please share this browser Tab to continue, not the whole screen or another window");
+        location.reload();
+        return;
+      }
+
       let mic = await navigator.mediaDevices.getUserMedia(audioSettingts);
       screenStream.addTrack(mic.getTracks()[0]);
       handleSuccess(screenStream);

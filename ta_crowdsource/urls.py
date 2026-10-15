@@ -21,7 +21,7 @@ from django.shortcuts import redirect
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', lambda request: redirect('/index/')),  # Redirige la raíz a /index/
+    path('', lambda request: redirect('/index/?groupId=1&campId=demo&workerId=DEMO2')),  # Redirige la raíz a /index/
     path('', include('usabilityTest.urls')),       # Incluye las rutas de la app
     path('', include('usabilityTest.evaluation_urls')),  # Panel de evaluación
     # path('', include('gsheets.urls')),           # Comentado porque ya no se usa

@@ -49,15 +49,8 @@ class SubjectProfileForm(forms.ModelForm):
         fields = [
             'age', 'gender', 'birth_country', 'residence_country',
             'mother_tongue', 'Do_you_speak_English',
-            'knowledge_on_usability', 'participated_before',
-            'payment_id', 'workerId', 'campId', 'groupId'
+            'knowledge_on_usability', 'participated_before'
         ]
-        widgets = {
-            'payment_id': forms.HiddenInput(),
-            'workerId': forms.HiddenInput(),
-            'campId': forms.HiddenInput(),
-            'groupId': forms.HiddenInput(),
-        }
         # Valores iniciales (se aplican al mostrar el formulario)
         initial = {
             'age': 25,
