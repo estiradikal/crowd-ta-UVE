@@ -2,7 +2,90 @@
 {% load static %}
 
 {% block custom_styles %}
+<link rel="stylesheet" type="text/css" href="{% static '/css/main.css' %}?v=6">
 <style>
+  /* Mismos estilos/tamaños que instructions.html */
+  .container {
+    max-width: 100% !important;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 10px !important;
+    margin-top: 0 !important;
+  }
+
+  h2 {
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0 !important;
+    padding-top: 5px;
+    font-size: 30px;              /* título de página */
+    font-weight: 600;
+    color: #4285f4;
+    line-height: 1.25;
+  }
+
+  .md-instructions {
+    width: 100%;
+    max-width: 1000px;
+    min-height: 65vh;
+    max-height: 65vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 18px 24px;
+    background-color: #fff;
+    margin: 0 auto 15px;
+    box-shadow: 0 1px 2px rgba(60, 64, 67, 0.08);
+  }
+
+  .btn-primary {
+    margin-top: 15px;
+    padding: 9px 26px;
+    font-size: 14px;
+    margin-left: 1%;
+    margin-bottom: 2%;
+  }
+
+  .text-center {
+    margin-bottom: 20px;
+  }
+
+  /* ---------------- Responsive ---------------- */
+  @media (max-width: 767.98px) {
+    .container {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+
+    h2 {
+      font-size: 26px;
+    }
+
+    .md-instructions {
+      min-height: 0;
+      max-height: none;      /* en móvil el contenido fluye y scrollea la página */
+      padding: 14px 14px;
+      border-radius: 6px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      font-size: 14px;
+      padding: 11px 20px;
+      margin-left: 0;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    h2 {
+      font-size: 26px;
+    }
+  }
+
+  /* ---------------- Vídeo (igual que antes) ---------------- */
   .video-container {
     position: relative;
     width: 100%;
@@ -30,55 +113,60 @@
     border-radius: 6px;
     border: 1px solid #ddd;
   }
+
+  .training-intro {
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Títulos del contenido en azul #4285f4 (igual que General Instructions) */
+  #training-md h1, #training-md h2, #training-md h3,
+  #training-md h4, #training-md h5, #training-md h6,
+  #training-md h1 strong, #training-md h2 strong, #training-md h3 strong,
+  #training-md h4 strong, #training-md h5 strong, #training-md h6 strong {
+    color: #4285f4 !important;
+  }
 </style>
 {% endblock %}
 
 {% block page_content %}
-<body>
-  <div class="container">
-    <h3>Part 2: Training session</h3>
+<div class="container">
+  <h2 class="mb-3">Part 2: Training session</h2>
 
-    <div class="item active">
-      <p>
-        The following video <strong>shows what we are expecting</strong> from you:
-      </p>
+  <p class="training-intro">
+    The following video <strong>shows what we are expecting</strong> from you:
+  </p>
 
-      <!-- Video de YouTube embebido, se reproduce en la misma página -->
-      <div class="video-container">
-        <iframe 
-            src="https://www.youtube.com/embed/5lcu3ig7IX4?rel=0&modestbranding=1" 
-            title="Training Session Video"
-            frameborder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-            referrerpolicy="strict-origin-when-cross-origin"
-            allowfullscreen>
-        </iframe>
-      </div>
-
-      <br>
-
-      <h5><strong>Important</strong></h5>
-      <ol>
-        <li>
-          To start the task, you should <strong>allow permissions for Screen Share, Mic, and Camera</strong> as shown below: <br><br>
-          <img src="{% static '/img/permissions.jpg' %}" alt="allow-permissions" class="instructions-img" style="max-width: 60%;">
-          <br>
-          The camera recording is optional, you can disable it later. Make sure to maximize your browser window for the screen recording and to not display any private information during the recording session.
-        </li>
-        <br>
-        <li>
-          <strong>Follow the steps on the left panel</strong> to complete the tasks: <br><br>
-          <img src="{% static '/img/left_panel.JPG' %}" alt="left panel" class="instructions-img" style="max-width: 60%;">
-        </li>
-        <br>
-        <li>
-          If you <strong>do not speak</strong> or remain silent, the following message will be displayed:<br><br>
-          <img src="{% static '/img/notify.JPG' %}" alt="notification" class="instructions-img" style="width: 9%; max-width: 170px;"><br><br>
-        </li>
-      </ol>
-
-      <a class="btn btn-primary" href="{% url 'test_page' 1 %}" role="button" style="margin-left:1%; margin-bottom:2%;">Continue</a>
-    </div>
-    <br>
+  <!-- Video de YouTube embebido (igual que antes, en el template) -->
+  <div class="video-container">
+    <iframe 
+        src="https://www.youtube.com/embed/5lcu3ig7IX4?rel=0&modestbranding=1" 
+        title="Training Session Video"
+        frameborder="0" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen>
+    </iframe>
   </div>
+
+  <!-- Resto del contenido cargado desde la BD (Markdown) y renderizado con marked.js -->
+  <div id="training-md" class="md-instructions md-content"></div>
+
+  <!-- Botón Continue (siempre visible) -->
+  <div class="text-center">
+    <a class="btn btn-primary" href="{% url 'test_page' 1 %}" role="button">Continue</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block custom_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+  (function () {
+    var source = "{{ training_md|escapejs }}";
+    var target = document.getElementById("training-md");
+    target.innerHTML = marked.parse(source);
+  })();
+</script>
 {% endblock %}

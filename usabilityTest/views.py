@@ -74,7 +74,9 @@ def tasks_info_page(request):
 
     # Si el perfil ya existe, ir a microtasks
     if profile_exists:
-        return render(request, 'main_templates/microtasks.html', {})
+        return render(request, 'main_templates/microtasks.html', {
+            'training_md': get_instructions_md("training_session"),
+        })
 
     # Si el perfil no existe, procesar formulario
     if request.method == 'POST':
@@ -88,7 +90,9 @@ def tasks_info_page(request):
             profile.payment_id = payid
             profile.save()
             # Redirigir a microtasks después del registro exitoso
-            return render(request, 'main_templates/microtasks.html', {})
+            return render(request, 'main_templates/microtasks.html', {
+                'training_md': get_instructions_md("training_session"),
+            })
         else:
             # Si el formulario no es válido, mostrar errores
             return render(request, 'main_templates/user_registration.html', {'form': form})

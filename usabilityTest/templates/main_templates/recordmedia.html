@@ -73,9 +73,9 @@
               following criteria<i class="fa fa-check-circle-o" style="display: none;" aria-hidden="true"></i>
             </div>
             <div class="taskInfo collapse" id="collapsetask" aria-expanded="true">
-              <p><br>
-                {{task.task_description|safe}}
-              </p>
+              <br>
+              <!-- Descripción de la tarea cargada desde la BD (Markdown) y renderizada con marked.js -->
+              <div id="task-desc-md" class="md-content"></div>
               <span class="btn btn-primary" data-id="Start Task" id="startrec"> Start Task</span>
               <div class="TaskDone" style="display: none;">Are you done?
                 <span class="btn btn-primary" data-toggle="collapse" href="#collapsetaskques" role="button"
@@ -97,7 +97,8 @@
                   <form action="#">{% csrf_token %}
                     <div class="form-group">
 
-                      <p>{{task.task_valid_question | safe}}</p>
+                      <!-- Pregunta de validación cargada desde la BD (Markdown) y renderizada con marked.js -->
+                      <div id="task-q-md" class="md-content"></div>
                     </div>
                     
                     <div class="form-check">
@@ -325,6 +326,12 @@ $( function() {
   $(function () {
     var source = "{{ instructions_md|escapejs }}";
     $("#instructions-md").html(marked.parse(source));
+  });
+
+  // Renderiza la descripción y la pregunta de la tarea (Markdown almacenado en la BD)
+  $(function () {
+    $("#task-desc-md").html(marked.parse("{{ task.task_description|escapejs }}"));
+    $("#task-q-md").html(marked.parse("{{ task.task_valid_question|escapejs }}"));
   });
 </script>
 {% endblock %}
