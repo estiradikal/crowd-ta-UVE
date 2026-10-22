@@ -1,0 +1,33 @@
+<div class="sheet-table-wrap">
+    <table class="table table-sm sheet-table">
+        <thead>
+            <tr>
+                <th>code</th>
+                <th>problem</th>
+                <th>severity</th>
+                <th>type</th>
+                <th class="num">occurrences</th>
+                <th>% of annotations</th>
+                <th class="num">avg duration (s)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in filas %}
+            <tr>
+                <td>{% if f.codigo %}<span class="badge badge-dark">{{ f.codigo }}</span>{% endif %}</td>
+                <td class="wrap">{{ f.descripcion }}</td>
+                <td>{{ f.severidad|default:"-" }}</td>
+                <td>{{ f.tipo|default:"-" }}</td>
+                <td class="num"><strong>{{ f.ocurrencias }}</strong></td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="occ-bar flex-grow-1 mr-2"><span style="width: {{ f.porcentaje|stringformat:'.1f' }}%"></span></div>
+                        <span class="num">{{ f.porcentaje }}%</span>
+                    </div>
+                </td>
+                <td class="num">{{ f.duracion_promedio|default_if_none:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

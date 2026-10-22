@@ -154,3 +154,6 @@ TEMPLATE_DIRS = (
 # Configuración de CORS para desarrollo
 CORS_ALLOW_ALL_ORIGINS = True   # Solo para desarrollo
 CORS_ALLOW_CREDENTIALS = True
+
+# Login URL for @staff_member_required decorator
+LOGIN_URL = '/admin/login/'

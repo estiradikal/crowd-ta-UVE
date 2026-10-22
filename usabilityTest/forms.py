@@ -1,5 +1,5 @@
 from django import forms
-from .models import SubjectProfile
+from .models import SubjectProfile, Test_Input
 from django_countries.fields import CountryField
 
 GENDER_CHOICES = (('', '---------'), ('M', 'Male'), ('F', 'Female'), ('Other', 'Other'))
@@ -61,4 +61,20 @@ class SubjectProfileForm(forms.ModelForm):
             'Do_you_speak_English': True,
             'knowledge_on_usability': False,
             'participated_before': False,
+        }
+
+
+class Test_InputForm(forms.ModelForm):
+    class Meta:
+        model = Test_Input
+        fields = ['campId', 'secret_key', 'application_url']
+        widgets = {
+            'campId': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., CAMP-001'}),
+            'secret_key': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., my-secret-key'}),
+            'application_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://example.com'}),
+        }
+        labels = {
+            'campId': 'Campaign ID',
+            'secret_key': 'Secret Key',
+            'application_url': 'Application URL',
         }
