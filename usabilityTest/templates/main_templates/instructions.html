@@ -13,28 +13,27 @@
     margin-top: 0 !important;
   }
 
-  /* Título alineado a la misma columna (1000px) que la caja de IDs y las instrucciones */
+  /* Título alineado a la misma columna (1000px) */
   h2 {
     max-width: 1000px;
     margin-left: auto;
     margin-right: auto;
     margin-top: 0 !important;
     padding-top: 5px;
-    font-size: 30px;              /* título de página */
+    font-size: 30px;
     font-weight: 600;
     color: #4285f4;
     line-height: 1.25;
   }
 
-  /* Contenedor del contenido Markdown: columna centrada como el documento original */
+  /* Contenedor del contenido Markdown */
   .md-instructions {
     width: 100%;
     max-width: 1000px;
-    min-height: 65vh;
-    max-height: 65vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
+    /* ¡CAMBIO AQUÍ! Quitamos el alto fijo y el scroll interno */
+    min-height: auto;
+    max-height: none;
+    overflow-y: visible; 
     border: 1px solid #ddd;
     border-radius: 4px;
     padding: 18px 24px;
@@ -67,15 +66,16 @@
     color: #3c4043;
   }
 
-  .btn-primary {
-    margin-top: 15px;
-    padding: 9px 26px;
-    font-size: 14px;
+  /* Contenedor del botón para darle espacio arriba y abajo */
+  .text-center {
+    max-width: 1000px;
+    margin: 20px auto 50px; /* Margen inferior de 50px para que no quede pegado al borde */
+    text-align: center;
   }
 
-  /* Asegurar que el botón no quede oculto */
-  .text-center {
-    margin-bottom: 20px;
+  .btn-primary {
+    padding: 9px 26px;
+    font-size: 14px;
   }
 
   /* ---------------- Responsive ---------------- */
@@ -90,8 +90,6 @@
     }
 
     .md-instructions {
-      min-height: 0;
-      max-height: none;      /* en móvil el contenido fluye y scrollea la página */
       padding: 14px 14px;
       border-radius: 6px;
     }
