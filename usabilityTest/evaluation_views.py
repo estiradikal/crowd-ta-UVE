@@ -341,6 +341,24 @@ def problema_dict(p):
     }
 
 
+def identificar_problema(evaluacion, catalogo_item):
+    """Asegura que el problema del catalogo figure en los problemas identificados del video.
+    Si es nuevo en este video, copia severidad y tipo de su ultimo registro en otro video.
+    Devuelve el ProblemaIdentificado creado, o None si ya estaba (o no hay problema)."""
+    if catalogo_item is None:
+        return None
+    if evaluacion.problemas.filter(problema=catalogo_item).exists():
+        return None
+    previo = (ProblemaIdentificado.objects.filter(problema=catalogo_item)
+              .order_by('-fecha_creacion', '-id').first())
+    return ProblemaIdentificado.objects.create(
+        evaluacion=evaluacion,
+        problema=catalogo_item,
+        severidad=previo.severidad if previo else '',
+        tipo=previo.tipo if previo else '',
+    )
+
+
 def resumen_problemas(anotaciones, problemas_identificados=()):
     """
     Cuenta cuantas veces aparece cada problema en un conjunto de anotaciones.
@@ -435,7 +453,13 @@ def api_agregar_anotacion(request, evaluacion_id):
         problema_ref=catalogo_item,
         comentarios=data.get('comentarios', ''),
     )
-    return JsonResponse({'id': anotacion.id, 'ok': True, 'anotacion': anotacion_dict(anotacion)})
+    nuevo = identificar_problema(evaluacion, catalogo_item)
+    return JsonResponse({
+        'id': anotacion.id,
+        'ok': True,
+        'anotacion': anotacion_dict(anotacion),
+        'problema': problema_dict(nuevo) if nuevo else None,
+    })
 
 
 @staff_member_required
@@ -466,7 +490,12 @@ def api_editar_anotacion(request, anotacion_id):
     anotacion.contexto = data.get('contexto', anotacion.contexto)
     anotacion.comentarios = data.get('comentarios', anotacion.comentarios)
     anotacion.save()
-    return JsonResponse({'ok': True, 'anotacion': anotacion_dict(anotacion)})
+    nuevo = identificar_problema(anotacion.evaluacion, anotacion.problema_ref)
+    return JsonResponse({
+        'ok': True,
+        'anotacion': anotacion_dict(anotacion),
+        'problema': problema_dict(nuevo) if nuevo else None,
+    })
 
 
 @staff_member_required

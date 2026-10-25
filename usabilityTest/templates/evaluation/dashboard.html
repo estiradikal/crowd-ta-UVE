@@ -7,47 +7,32 @@
     <h2>Dashboard</h2>
     <p class="text-muted">Welcome to the administration panel</p>
 
-    <div class="row mt-4">
-        <div class="col-md-3">
-            <a href="/admin-panel/videos/" class="text-decoration-none">
-                <div class="card text-center border-primary">
-                    <div class="card-body">
-                        <h5 class="card-title text-primary"><i class="fas fa-video"></i> Total Videos</h5>
-                        <h2 class="text-primary">{{ stats.total }}</h2>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="/admin-panel/videos/?filtro=completadas" class="text-decoration-none">
-                <div class="card text-center border-success">
-                    <div class="card-body">
-                        <h5 class="card-title text-success"><i class="fas fa-check-circle"></i> Evaluated</h5>
-                        <h2 class="text-success">{{ stats.evaluados }}</h2>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="/admin-panel/videos/?filtro=pendientes" class="text-decoration-none">
-                <div class="card text-center border-warning">
-                    <div class="card-body">
-                        <h5 class="card-title text-warning"><i class="fas fa-clock"></i> Pending</h5>
-                        <h2 class="text-warning">{{ stats.pendientes }}</h2>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="/admin-panel/campanas/" class="text-decoration-none">
-                <div class="card text-center border-info">
-                    <div class="card-body">
-                        <h5 class="card-title text-info"><i class="fas fa-clipboard-list"></i> Campaigns</h5>
-                        <h2 class="text-info">{{ stats.campanas }}</h2>
-                    </div>
-                </div>
-            </a>
-        </div>
+    <div class="stat-strip">
+        <a href="/admin-panel/videos/" class="stat">
+            <span class="stat-body">
+                <span class="stat-label"><span class="stat-dot"></span>Total videos</span>
+                <span class="stat-value">{{ stats.total }}</span>
+            </span>
+        </a>
+        <a href="/admin-panel/videos/?filtro=completadas" class="stat tone-green">
+            <span class="stat-body">
+                <span class="stat-label"><span class="stat-dot"></span>Evaluated</span>
+                <span class="stat-value">{{ stats.evaluados }}{% if stats.total %}<span class="stat-meta">{% widthratio stats.evaluados stats.total 100 %}%</span>{% endif %}</span>
+                <span class="stat-bar"><span style="width: {% widthratio stats.evaluados stats.total 100 %}%"></span></span>
+            </span>
+        </a>
+        <a href="/admin-panel/videos/?filtro=pendientes" class="stat tone-amber">
+            <span class="stat-body">
+                <span class="stat-label"><span class="stat-dot"></span>Pending</span>
+                <span class="stat-value">{{ stats.pendientes }}</span>
+            </span>
+        </a>
+        <a href="/admin-panel/campanas/" class="stat tone-violet">
+            <span class="stat-body">
+                <span class="stat-label"><span class="stat-dot"></span>Campaigns</span>
+                <span class="stat-value">{{ stats.campanas }}</span>
+            </span>
+        </a>
     </div>
 
     <div class="row mt-4">

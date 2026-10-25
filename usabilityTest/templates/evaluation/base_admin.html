@@ -11,6 +11,8 @@
                 if (t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                     document.documentElement.setAttribute('data-theme', 'dark');
                 }
+                var w = parseInt(localStorage.getItem('admin-sidebar-w'));
+                if (w) document.documentElement.style.setProperty('--sidebar-w', w + 'px');
             } catch (e) {}
         })();
     </script>
@@ -26,9 +28,19 @@
     <div class="admin-container">
         <!-- Sidebar -->
         <aside class="admin-sidebar" id="sidebar">
+            <script>
+                // Restore the collapsed state before the first paint
+                try {
+                    if (localStorage.getItem('admin-sidebar-collapsed') === '1') {
+                        document.getElementById('sidebar').classList.add('collapsed');
+                    }
+                } catch (e) {}
+            </script>
             <button class="sidebar-handle" id="btnCollapse" title="Collapse menu">
                 <i class="fas fa-chevron-left"></i>
             </button>
+            <div class="sidebar-resizer" id="sidebarResizer" role="separator" aria-orientation="vertical"
+                 aria-label="Resize menu" title="Drag to resize the menu (double-click to reset)"></div>
 
             <div class="sidebar-profile" id="sidebarProfile">
                 <div class="profile-avatar">
@@ -143,6 +155,7 @@
             </div>
             <nav class="guide-chips" id="guideChips">
                 <button type="button" data-target="workflow">How to</button>
+                <button type="button" data-target="shortcuts">Shortcuts</button>
                 <button type="button" data-target="indicators">Indicators</button>
                 <button type="button" data-target="moments">Task moments</button>
                 <button type="button" data-target="formulation">Writing problems</button>
@@ -164,9 +177,43 @@
 
             // Collapse / expand
             function toggleSidebar() {
-                sidebar.classList.toggle('collapsed');
+                var collapsed = sidebar.classList.toggle('collapsed');
+                try { localStorage.setItem('admin-sidebar-collapsed', collapsed ? '1' : '0'); } catch (e) {}
             }
             document.getElementById('btnCollapse').addEventListener('click', toggleSidebar);
+
+            // Resize the sidebar by dragging its right edge
+            var resizer = document.getElementById('sidebarResizer');
+            var SIDEBAR_MIN = 180, SIDEBAR_MAX = 420;
+            resizer.addEventListener('pointerdown', function (e) {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                resizer.setPointerCapture(e.pointerId);
+                resizer.classList.add('dragging');
+                document.body.classList.add('sidebar-resizing');
+                var left = sidebar.getBoundingClientRect().left;
+                var width = sidebar.getBoundingClientRect().width;
+
+                function onMove(ev) {
+                    width = Math.round(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, ev.clientX - left)));
+                    document.documentElement.style.setProperty('--sidebar-w', width + 'px');
+                }
+                function onUp() {
+                    resizer.removeEventListener('pointermove', onMove);
+                    resizer.removeEventListener('pointerup', onUp);
+                    resizer.removeEventListener('pointercancel', onUp);
+                    resizer.classList.remove('dragging');
+                    document.body.classList.remove('sidebar-resizing');
+                    try { localStorage.setItem('admin-sidebar-w', width); } catch (err) {}
+                }
+                resizer.addEventListener('pointermove', onMove);
+                resizer.addEventListener('pointerup', onUp);
+                resizer.addEventListener('pointercancel', onUp);
+            });
+            resizer.addEventListener('dblclick', function () {
+                document.documentElement.style.removeProperty('--sidebar-w');
+                try { localStorage.removeItem('admin-sidebar-w'); } catch (e) {}
+            });
 
             // Dark mode
             var themeBtn = document.getElementById('btnTheme');
