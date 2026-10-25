@@ -4,13 +4,78 @@
 
 {% block extra_css %}
 <style>
-    .video-container { background: #000; border-radius: 8px; overflow: hidden; }
-    #videoPlayer { width: 100%; height: 60vh; }
+    /* Header: title on the left, compact evaluation info on the right */
+    .eval-header {
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+        gap: 8px 16px; margin-bottom: 12px;
+    }
+    .eval-info {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+        font-size: 0.85rem; color: var(--text-muted, #6c757d);
+        background: var(--surface, #fff); border: 1px solid var(--border, #dee2e6);
+        border-radius: 999px; padding: 4px 14px;
+    }
+    .eval-info-item { white-space: nowrap; }
+    .eval-info .time-display { font-size: 1em; color: var(--text, #212529); }
+
+    .video-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .video-container { background: #000; border-radius: 0 0 8px 8px; overflow: hidden; }
+    /* Fits the pane width at 16:9 but never taller than the screen; dragging the bar sets --video-h */
+    #videoPlayer {
+        display: block; width: 100%; background: #000;
+        height: var(--video-h, auto); aspect-ratio: 16 / 9;
+        max-height: calc(100vh - 110px);
+    }
+    .eval-split.theater #videoPlayer { height: calc(100vh - 110px); }
     .time-display { font-family: monospace; font-size: 1.2em; }
-    .btn-mark-time { background: #28a745; color: white; }
-    .btn-mark-time:hover { background: #218838; }
-    .controls-row { margin-top: 15px; }
+    .mark-hint { font-size: 0.78rem; margin: -6px 0 12px; }
+    .mark-hint kbd, .key-hint { font-size: 0.72rem; padding: 1px 5px; }
+    .key-hint { margin-left: 4px; vertical-align: 1px; }
+    @keyframes marked { from { background-color: #fff3a3; } to { background-color: transparent; } }
+    .just-marked { animation: marked 0.9s ease-out; }
     .annotations-table { max-height: 300px; overflow-y: auto; }
+
+    /* ---- Resizable split layout ---- */
+    .eval-split { display: flex; align-items: stretch; --side-w: 420px; }
+    .eval-pane-main { flex: 1 1 auto; min-width: 0; container-type: inline-size; }
+    .eval-pane-side { flex: 0 0 var(--side-w); width: var(--side-w); min-width: 0; }
+    .annotation-card {
+        position: sticky; top: 12px;
+        max-height: calc(100vh - 24px); overflow-y: auto;
+    }
+    .annotation-card .card-header { position: sticky; top: 0; z-index: 3; }
+
+    .split-gutter { position: relative; flex: 0 0 auto; touch-action: none; outline: none; }
+    .split-gutter::after {
+        content: ''; position: absolute; border-radius: 4px;
+        background: var(--border, #dee2e6); transition: background-color 0.15s ease;
+    }
+    .split-gutter:hover::after, .split-gutter:focus-visible::after, .split-gutter.dragging::after {
+        background: var(--accent, #2563eb);
+    }
+    .split-gutter-x { width: 16px; cursor: col-resize; }
+    .split-gutter-x::after { top: 0; bottom: 0; left: 6px; width: 4px; }
+    .split-gutter-y { height: 16px; cursor: row-resize; }
+    .split-gutter-y::after { left: 50%; width: 60px; margin-left: -30px; top: 6px; height: 4px; }
+    body.is-resizing { user-select: none; }
+    body.is-resizing.resize-x { cursor: col-resize; }
+    body.is-resizing.resize-y { cursor: row-resize; }
+    body.is-resizing video { pointer-events: none; }
+
+    .pane-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .pane-grid > .card { margin-bottom: 0; }
+    @container (min-width: 720px) {
+        .pane-grid { grid-template-columns: 1fr 1fr; }
+        .pane-grid-controls { grid-template-columns: 2fr 1fr; }
+    }
+
+    /* Small screens: stack the panels, no side gutter */
+    @media (max-width: 991.98px) {
+        .eval-split { flex-direction: column; }
+        .eval-pane-side { flex-basis: auto; width: auto; }
+        .split-gutter-x { display: none; }
+        .annotation-card { position: static; max-height: none; }
+    }
     .annotation-row:hover { background-color: #f8f9fa; cursor: pointer; }
     .annotation-row { transition: background-color 0.2s; }
 
@@ -50,10 +115,21 @@
 
 {% block content %}
 <div class="eval-video">
-    <div class="row mb-3">
-        <div class="col">
-            <a href="/admin-panel/videos/" class="btn btn-outline-secondary">&larr; Back to list</a>
-            <h2 class="d-inline-block ml-3">Evaluate Video</h2>
+    <div class="eval-header">
+        <div class="eval-header-title">
+            <a href="/admin-panel/videos/" class="btn btn-outline-secondary btn-sm">&larr; Back to list</a>
+            <h2 class="d-inline-block ml-3 mb-0">Evaluate Video</h2>
+        </div>
+        <div class="eval-info" aria-label="Evaluation information">
+            <span class="eval-info-item" title="Evaluation ID"><i class="fas fa-hashtag"></i> {{ evaluacion.id }}</span>
+            {% if evaluacion.completada %}
+                <span class="badge badge-success">Completed</span>
+            {% else %}
+                <span class="badge badge-warning">In Progress</span>
+            {% endif %}
+            <span class="eval-info-item" title="Active time spent annotating this video. Paused while this browser tab is hidden.">
+                <i class="far fa-clock"></i> <span class="time-display" id="activeTimer">{{ evaluacion.tiempo_activo_texto }}</span>
+            </span>
         </div>
     </div>
 
@@ -89,308 +165,199 @@
     <div class="tab-content">
     <div class="tab-pane fade show active" id="evaluate" role="tabpanel">
 
-    <!-- Row 1: Video Player (full width) -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <strong>Worker ID:</strong> {{ worker_id }} | <strong>Task:</strong> {{ task_id }}
-                </div>
-                <div class="card-body p-0">
-                    <div class="video-container">
-                        <video id="videoPlayer" controls>
-                            <source src="{{ video_files.0.url }}" type="video/webm">
-                            Your browser does not support video.
-                        </video>
-                    </div>
-                </div>
+    <!-- Resizable layout: video + lists on the left, New Annotation on the right.
+         Drag the bars (or focus them and use the arrow keys) to resize; double-click resets. -->
+    <div class="eval-split" id="evalSplit">
+    <div class="eval-pane eval-pane-main" id="paneMain">
+
+    <div class="card mb-0">
+        <div class="card-header video-header">
+            <span><strong>Worker ID:</strong> {{ worker_id }} | <strong>Task:</strong> {{ task_id }}</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnTheater" aria-pressed="false"
+                    title="Hide the menu and make the video as large as the screen allows">
+                <i class="fas fa-expand"></i> <span>Larger video</span>
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="video-container">
+                <video id="videoPlayer" controls>
+                    <source src="{{ video_files.0.url }}" type="video/webm">
+                    Your browser does not support video.
+                </video>
             </div>
         </div>
     </div>
+    <div class="split-gutter split-gutter-y" id="gutterVideo" role="separator" tabindex="0"
+         aria-orientation="horizontal" aria-label="Resize video height" title="Drag to resize the video (double-click to reset)"></div>
 
     {% if video_files|length > 1 %}
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">Select Video</div>
-                <div class="card-body">
-                    <div class="btn-group flex-wrap" role="group">
-                        {% for vf in video_files %}
-                        <button type="button" class="btn btn-outline-primary video-selector {% if forloop.first %}active{% endif %}"
-                                data-url="{{ vf.url }}">
-                            {{ vf.filename }} ({{ vf.date }})
-                        </button>
-                        {% endfor %}
-                    </div>
-                </div>
+    <div class="card mb-3">
+        <div class="card-header">Select Video</div>
+        <div class="card-body">
+            <div class="btn-group flex-wrap" role="group">
+                {% for vf in video_files %}
+                <button type="button" class="btn btn-outline-primary video-selector {% if forloop.first %}active{% endif %}"
+                        data-url="{{ vf.url }}">
+                    {{ vf.filename }} ({{ vf.date }})
+                </button>
+                {% endfor %}
             </div>
         </div>
     </div>
     {% endif %}
 
-    <!-- Row 2: Controls + Info side by side -->
-    <div class="row controls-row">
-        <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header">Time Controls</div>
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-4">
-                            <label>Current Time:</label>
-                            <div class="time-display" id="currentTime">00:00</div>
-                        </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-mark-time btn-lg btn-block" id="btnMarkStart" type="button">
-                                Mark Start
-                            </button>
-                        </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-warning btn-lg btn-block" id="btnMarkEnd" type="button">
-                                Mark End
-                            </button>
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <label>Start Selected:</label>
-                            <input type="text" id="startTime" class="form-control" readonly value="00:00">
-                        </div>
-                        <div class="col-md-6">
-                            <label>End Selected:</label>
-                            <input type="text" id="finishTime" class="form-control" readonly value="00:00">
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Annotations: right below the video -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fas fa-list"></i> Annotations (<span id="annotationCount">0</span>)
         </div>
-
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">Information</div>
-                <div class="card-body">
-                    <p><strong>Evaluation ID:</strong> {{ evaluacion.id }}</p>
-                    <p><strong>Status:</strong>
-                        {% if evaluacion.completada %}
-                            <span class="badge badge-success">Completed</span>
-                        {% else %}
-                            <span class="badge badge-warning">In Progress</span>
-                        {% endif %}
-                    </p>
-                    <p class="mb-1"><strong>Annotation time:</strong>
-                        <span class="time-display" id="activeTimer" title="Active time spent annotating this video. Paused while this browser tab is hidden.">{{ evaluacion.tiempo_activo_texto }}</span>
-                    </p>
-                    <p class="text-muted mt-3">
-                        Use the "Mark Start" and "Mark End" buttons to capture video timestamps.
-                    </p>
-                </div>
+        <div class="card-body p-0">
+            <div class="annotations-table">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Problem</th>
+                            <th>Indicator</th>
+                            <th>Context</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="annotationsList"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- Row 3: New Annotation Form + Register Problem Form -->
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <i class="fas fa-plus-circle"></i> New Annotation
-                </div>
-                <div class="card-body">
-                    <form id="annotationForm">
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label>Start Time</label>
-                                <input type="text" class="form-control" id="formStartTime" readonly value="00:00">
-                            </div>
-                            <div class="form-group col-md-6">
-                                <label>End Time</label>
-                                <input type="text" class="form-control" id="formEndTime" readonly value="00:00">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="formProblemText" id="formProblemLabel">Problem</label> <a href="#" class="help-link" data-open-guide="formulation" title="Guide: how to write a problem" aria-label="Open guide: how to write a problem"><i class="fas fa-question-circle"></i></a>
-                            <div class="problem-combobox" id="problemCombobox">
-                                <input type="hidden" id="formProblemId" value="">
-                                <div class="cb-input-wrap">
-                                    <input type="text" class="form-control" id="formProblemText"
-                                           placeholder="-- Select problem --" autocomplete="off"
-                                           role="combobox" aria-expanded="false" aria-controls="problemListbox"
-                                           aria-autocomplete="list" aria-labelledby="formProblemLabel">
-                                    <button type="button" class="cb-btn cb-clear" id="cbClear" title="Clear" aria-label="Clear" hidden>&times;</button>
-                                    <button type="button" class="cb-btn cb-toggle" id="cbToggle" tabindex="-1" aria-label="Show problem list"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>
-                                </div>
-                                <div class="cb-menu" id="problemListbox" role="listbox" aria-label="Problems" hidden></div>
-                            </div>
-                            <small class="text-muted">Select an existing problem or create a new one.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="formIndicator">Indicator</label> <a href="#" class="help-link" data-open-guide="indicators" title="Guide: indicators" aria-label="Open guide: indicators"><i class="fas fa-question-circle"></i></a>
-                            <select class="form-control" id="formIndicator" required>
-                                <option value="">-- Select indicator --</option>
-                                <option value="ACT">ACT - Wrong action</option>
-                                <option value="DISC">DISC - Discontinues action</option>
-                                <option value="EXE">EXE - Execution problem</option>
-                                <option value="REP">REP - Repeated action</option>
-                                <option value="CORR">CORR - Corrective action</option>
-                                <option value="STOP">STOP - Task stopped</option>
-                                <option value="GOAL">GOAL - Wrong goal</option>
-                                <option value="PUZZ">PUZZ - Puzzled</option>
-                                <option value="RAND">RAND - Random actions</option>
-                                <option value="SEARCH">SEARCH - Searches for function</option>
-                                <option value="DIFF">DIFF - Execution difficulty</option>
-                                <option value="DSF">DSF - Doubt/surprise/frustration</option>
-                                <option value="REC">REC - Recognition of error</option>
-                                <option value="QUIT">QUIT - Quits task</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="formContext">Task Context</label> <a href="#" class="help-link" data-open-guide="moments" title="Guide: task moments" aria-label="Open guide: task moments"><i class="fas fa-question-circle"></i></a>
-                            <select class="form-control" id="formContext" required>
-                                <option value="">-- Select context --</option>
-                                <option value="Qualification">Qualification</option>
-                                <option value="Instructions">Instructions</option>
-                                <option value="Demographic questionnaire">Demographic questionnaire</option>
-                                <option value="Training">Training</option>
-                                <option value="Main task">Main task</option>
-                                <option value="Final questionnaire">Final questionnaire</option>
-                                <option value="Payment">Payment</option>
-                                <option value="Help/Support/Feedback">Help/Support/Feedback</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Comments</label>
-                            <textarea class="form-control" id="formComments" rows="2" placeholder="Additional comments..."></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-block">
-                            <i class="fas fa-save"></i> Save Annotation
-                        </button>
-                    </form>
-                </div>
-            </div>
+    <!-- Problems identified in this video -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fas fa-exclamation-triangle"></i> Identified Problems (<span id="problemCount">0</span>)
         </div>
-
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header bg-danger text-white">
-                    <i class="fas fa-exclamation-triangle"></i> Register Problem
-                </div>
-                <div class="card-body">
-                    <form id="problemForm">
-                        <div class="form-group">
-                            <label>Problem</label>
-                            <select class="form-control" id="problemSelect" required>
-                                <option value="">-- Select problem --</option>
-                            </select>
-                            <small class="text-muted">Select an existing problem from the catalog.</small>
-                        </div>
-                        <div class="form-group">
-                            <label>Severity</label> <a href="#" class="help-link" data-open-guide="severity" title="Guide: severity levels" aria-label="Open guide: severity levels"><i class="fas fa-question-circle"></i></a>
-                            <div class="d-flex">
-                                <div class="form-check mr-3">
-                                    <input class="form-check-input" type="radio" name="severity" id="sevCritical" value="Critical">
-                                    <label class="form-check-label" for="sevCritical">Critical</label>
-                                </div>
-                                <div class="form-check mr-3">
-                                    <input class="form-check-input" type="radio" name="severity" id="sevSerious" value="Serious" checked>
-                                    <label class="form-check-label" for="sevSerious">Serious</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="severity" id="sevCosmetic" value="Cosmetic">
-                                    <label class="form-check-label" for="sevCosmetic">Cosmetic</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Type</label> <a href="#" class="help-link" data-open-guide="types" title="Guide: problem types" aria-label="Open guide: problem types"><i class="fas fa-question-circle"></i></a>
-                            <select class="form-control" id="problemType" required>
-                                <option value="">-- Select type --</option>
-                                <option value="Navigation">Navigation</option>
-                                <option value="Layout">Layout</option>
-                                <option value="Content">Content</option>
-                                <option value="Functionality">Functionality</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Comments</label>
-                            <textarea class="form-control" id="problemComments" rows="2" placeholder="Additional comments..."></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-danger btn-block">
-                            <i class="fas fa-save"></i> Save Problem
-                        </button>
-                    </form>
-                </div>
+        <div class="card-body p-0">
+            <div class="annotations-table">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Problem</th>
+                            <th>Severity</th>
+                            <th>Type</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="problemsList"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- Row 4: Lists -->
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <i class="fas fa-list"></i> Annotations (<span id="annotationCount">0</span>)
-                </div>
-                <div class="card-body p-0">
-                    <div class="annotations-table">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Start</th>
-                                    <th>End</th>
-                                    <th>Problem</th>
-                                    <th>Indicator</th>
-                                    <th>Context</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="annotationsList"></tbody>
-                        </table>
-                    </div>
-                </div>
+    <!-- Complete -->
+    <div class="pane-grid pane-grid-controls mb-5">
+        <div class="card">
+            <div class="card-header">General Observations</div>
+            <div class="card-body">
+                <textarea class="form-control" id="generalObs" rows="3" placeholder="General observations about the evaluation...">{{ evaluacion.observaciones_generales }}</textarea>
             </div>
         </div>
-
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <i class="fas fa-exclamation-triangle"></i> Identified Problems (<span id="problemCount">0</span>)
-                </div>
-                <div class="card-body p-0">
-                    <div class="annotations-table">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>Code</th>
-                                    <th>Problem</th>
-                                    <th>Severity</th>
-                                    <th>Type</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="problemsList"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Row 5: Complete -->
-    <div class="row mt-3 mb-5">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">General Observations</div>
-                <div class="card-body">
-                    <textarea class="form-control" id="generalObs" rows="3" placeholder="General observations about the evaluation...">{{ evaluacion.observaciones_generales }}</textarea>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 d-flex align-items-center justify-content-center">
+        <div class="d-flex align-items-center justify-content-center">
             <button class="btn btn-success btn-lg btn-block" id="btnComplete" type="button">
                 <i class="fas fa-check"></i> Finish Evaluation
             </button>
         </div>
     </div>
+
+    </div><!-- /#paneMain -->
+
+    <div class="split-gutter split-gutter-x" id="gutterSide" role="separator" tabindex="0"
+         aria-orientation="vertical" aria-label="Resize annotation panel" title="Drag to resize the panel (double-click to reset)"></div>
+
+    <div class="eval-pane eval-pane-side" id="paneSide">
+        <div class="card annotation-card">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-plus-circle"></i> New Annotation
+            </div>
+            <div class="card-body">
+                <form id="annotationForm">
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="formStartTime">Start Time <kbd class="key-hint" title="Press S to mark the start">S</kbd></label>
+                            <input type="text" class="form-control" id="formStartTime" readonly value="00:00">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="formEndTime">End Time <kbd class="key-hint" title="Press E to mark the end">E</kbd></label>
+                            <input type="text" class="form-control" id="formEndTime" readonly value="00:00">
+                        </div>
+                    </div>
+                    <p class="mark-hint text-muted">
+                        Press <kbd>S</kbd> / <kbd>E</kbd> to mark start / end at the current video time,
+                        <kbd>Space</kbd> to play or pause.
+                        <a href="#" class="help-link" data-open-guide="shortcuts" title="Guide: keyboard shortcuts" aria-label="Open guide: keyboard shortcuts"><i class="fas fa-question-circle"></i></a>
+                    </p>
+                    <div class="form-group">
+                        <label for="formProblemText" id="formProblemLabel">Problem</label> <a href="#" class="help-link" data-open-guide="formulation" title="Guide: how to write a problem" aria-label="Open guide: how to write a problem"><i class="fas fa-question-circle"></i></a>
+                        <div class="problem-combobox" id="problemCombobox">
+                            <input type="hidden" id="formProblemId" value="">
+                            <div class="cb-input-wrap">
+                                <input type="text" class="form-control" id="formProblemText"
+                                       placeholder="-- Select problem --" autocomplete="off"
+                                       role="combobox" aria-expanded="false" aria-controls="problemListbox"
+                                       aria-autocomplete="list" aria-labelledby="formProblemLabel">
+                                <button type="button" class="cb-btn cb-clear" id="cbClear" title="Clear" aria-label="Clear" hidden>&times;</button>
+                                <button type="button" class="cb-btn cb-toggle" id="cbToggle" tabindex="-1" aria-label="Show problem list"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>
+                            </div>
+                            <div class="cb-menu" id="problemListbox" role="listbox" aria-label="Problems" hidden></div>
+                        </div>
+                        <small class="text-muted">Select an existing problem or create a new one.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="formIndicator">Indicator</label> <a href="#" class="help-link" data-open-guide="indicators" title="Guide: indicators" aria-label="Open guide: indicators"><i class="fas fa-question-circle"></i></a>
+                        <select class="form-control" id="formIndicator" required>
+                            <option value="">-- Select indicator --</option>
+                            <option value="ACT">ACT - Wrong action</option>
+                            <option value="DISC">DISC - Discontinues action</option>
+                            <option value="EXE">EXE - Execution problem</option>
+                            <option value="REP">REP - Repeated action</option>
+                            <option value="CORR">CORR - Corrective action</option>
+                            <option value="STOP">STOP - Task stopped</option>
+                            <option value="GOAL">GOAL - Wrong goal</option>
+                            <option value="PUZZ">PUZZ - Puzzled</option>
+                            <option value="RAND">RAND - Random actions</option>
+                            <option value="SEARCH">SEARCH - Searches for function</option>
+                            <option value="DIFF">DIFF - Execution difficulty</option>
+                            <option value="DSF">DSF - Doubt/surprise/frustration</option>
+                            <option value="REC">REC - Recognition of error</option>
+                            <option value="QUIT">QUIT - Quits task</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="formContext">Task Context</label> <a href="#" class="help-link" data-open-guide="moments" title="Guide: task moments" aria-label="Open guide: task moments"><i class="fas fa-question-circle"></i></a>
+                        <select class="form-control" id="formContext" required>
+                            <option value="">-- Select context --</option>
+                            <option value="Qualification">Qualification</option>
+                            <option value="Instructions">Instructions</option>
+                            <option value="Demographic questionnaire">Demographic questionnaire</option>
+                            <option value="Training">Training</option>
+                            <option value="Main task">Main task</option>
+                            <option value="Final questionnaire">Final questionnaire</option>
+                            <option value="Payment">Payment</option>
+                            <option value="Help/Support/Feedback">Help/Support/Feedback</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Comments</label>
+                        <textarea class="form-control" id="formComments" rows="2" placeholder="Additional comments..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-save"></i> Save Annotation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div><!-- /#paneSide -->
+    </div><!-- /#evalSplit -->
     </div><!-- /#evaluate -->
 
     <!-- 1. Annotation table (same columns as the Excel sheet) -->
@@ -659,9 +626,6 @@
     var VIDEO_LABEL = '{{ video_label|escapejs }}';
 
     var video = document.getElementById('videoPlayer');
-    var currentTimeEl = document.getElementById('currentTime');
-    var startTimeInput = document.getElementById('startTime');
-    var finishTimeInput = document.getElementById('finishTime');
     var formStartTime = document.getElementById('formStartTime');
     var formEndTime = document.getElementById('formEndTime');
 
@@ -670,27 +634,13 @@
     var annotations = [];
     var problems = [];
     var catalog = [];
-    var problemSelect = document.getElementById('problemSelect');
 
-    function fillProblemSelect(selectedId) {
-        var current = selectedId !== undefined && selectedId !== null ? selectedId : problemSelect.value;
-        problemSelect.innerHTML = '<option value="">-- Select problem --</option>';
-        catalog.forEach(function(c) {
-            var opt = document.createElement('option');
-            opt.value = c.id;
-            opt.textContent = c.descripcion;
-            problemSelect.appendChild(opt);
-        });
-        if (current) problemSelect.value = current;
-    }
-
-    function loadCatalog(selectedId) {
+    function loadCatalog() {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', API_BASE + '/catalogo-problemas/', true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 catalog = JSON.parse(xhr.responseText).catalogo;
-                fillProblemSelect(selectedId);
                 renderSummary();
             }
         };
@@ -910,6 +860,14 @@
         };
     }
 
+    // Saving an annotation also registers its problem for this video when it was not there yet
+    function addIdentifiedProblem(p) {
+        if (!p) return;
+        if (problems.some(function(x) { return x.id === p.id; })) return;
+        problems.push(toProblem(p));
+        renderProblems();
+    }
+
     function loadData() {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', API_BASE + '/' + EVAL_ID + '/datos/', true);
@@ -925,20 +883,37 @@
         xhr.send();
     }
 
-    video.addEventListener('timeupdate', function() {
-        if (currentTimeEl) currentTimeEl.textContent = formatTime(video.currentTime);
-    });
+    function flash(el) {
+        el.classList.remove('just-marked');
+        void el.offsetWidth;  // restart the highlight animation
+        el.classList.add('just-marked');
+    }
 
-    document.getElementById('btnMarkStart').addEventListener('click', function() {
-        var time = formatTime(video.currentTime);
-        startTimeInput.value = time;
-        formStartTime.value = time;
-    });
+    function markStart() {
+        formStartTime.value = formatTime(video.currentTime);
+        flash(formStartTime);
+    }
 
-    document.getElementById('btnMarkEnd').addEventListener('click', function() {
-        var time = formatTime(video.currentTime);
-        finishTimeInput.value = time;
-        formEndTime.value = time;
+    function markEnd() {
+        formEndTime.value = formatTime(video.currentTime);
+        flash(formEndTime);
+    }
+
+    // Keyboard shortcuts: S = mark start, E = mark end, Space = play/pause.
+    // Ignored while typing in a field or with a modal open.
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        var el = document.activeElement;
+        var typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+        if (typing || document.querySelector('.modal.show')) return;
+        if (!document.getElementById('evaluate').classList.contains('active')) return;
+        var key = e.key.toLowerCase();
+        if (key === 's') { e.preventDefault(); markStart(); }
+        else if (key === 'e') { e.preventDefault(); markEnd(); }
+        else if (key === ' ' && el !== video && !(el && el.tagName === 'BUTTON')) {
+            e.preventDefault();
+            if (video.paused) video.play(); else video.pause();
+        }
     });
 
     document.getElementById('annotationForm').addEventListener('submit', function(e) {
@@ -967,43 +942,13 @@
             if (!err && res.ok) {
                 annotations.push(toAnnotation(res.anotacion));
                 renderAnnotations();
+                addIdentifiedProblem(res.problema);
                 document.getElementById('annotationForm').reset();
                 resetProblemCb();
                 formStartTime.value = '00:00';
                 formEndTime.value = '00:00';
             } else {
                 alert(err || 'Error saving annotation.');
-            }
-        });
-    });
-
-    document.getElementById('problemForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        var problemId = parseInt(problemSelect.value);
-        var severity = document.querySelector('input[name="severity"]:checked');
-        var type = document.getElementById('problemType').value;
-
-        if (!problemId || !severity || !type) {
-            alert('Select a problem, severity and type.');
-            return;
-        }
-
-        var data = {
-            problema_id: problemId,
-            severidad: severity.value,
-            tipo: type,
-            comentarios: document.getElementById('problemComments').value
-        };
-
-        apiPost(API_BASE + '/' + EVAL_ID + '/problema/', data, function(err, res) {
-            if (!err && res.ok) {
-                problems.push(toProblem(res.problema));
-                renderProblems();
-                document.getElementById('problemForm').reset();
-                document.getElementById('sevSerious').checked = true;
-            } else {
-                alert(err || 'Error saving problem.');
             }
         });
     });
@@ -1263,7 +1208,7 @@
         var sev = document.querySelector('input[name="editSeverity"][value="' + prob.severity + '"]');
         document.querySelectorAll('input[name="editSeverity"]').forEach(function(r) { r.checked = false; });
         if (sev) sev.checked = true;
-        copyOptions('problemType', document.getElementById('editProbType'), prob.type);
+        copyOptions('regProblemType', document.getElementById('editProbType'), prob.type);
         document.getElementById('editProbComments').value = prob.comments || '';
         showModalError('editProbError', '');
         $('#editProblemModal').modal('show');
@@ -1302,6 +1247,7 @@
             annotations = annotations.map(function(a) { return a.id === id ? toAnnotation(res.anotacion) : a; });
             annotations.sort(function(a, b) { return parseTime(a.startTime) - parseTime(b.startTime) || a.id - b.id; });
             renderAnnotations();
+            addIdentifiedProblem(res.problema);
             $('#editAnnotationModal').modal('hide');
         });
     });
@@ -1438,6 +1384,122 @@
         if (document.visibilityState === 'hidden') flushActiveTime(true);
     });
     window.addEventListener('pagehide', function() { flushActiveTime(true); });
+
+    // ---- Resizable layout (video height, annotation panel width) ----
+    // Sizes are remembered per browser; double-click a bar to reset it.
+    function makeResizable(opts) {
+        var gutter = opts.gutter;
+        var target = opts.target;
+
+        function apply(px) {
+            px = Math.round(Math.min(opts.max(), Math.max(opts.min, px)));
+            target.style.setProperty(opts.cssVar, px + 'px');
+            return px;
+        }
+        function save(px) { try { localStorage.setItem(opts.storageKey, px); } catch (e) {} }
+        function current() { return opts.current(); }
+
+        try {
+            var stored = parseInt(localStorage.getItem(opts.storageKey));
+            if (stored) apply(stored);
+        } catch (e) {}
+
+        gutter.addEventListener('pointerdown', function(e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            gutter.setPointerCapture(e.pointerId);
+            gutter.classList.add('dragging');
+            document.body.classList.add('is-resizing', opts.axis === 'x' ? 'resize-x' : 'resize-y');
+            var startPos = opts.axis === 'x' ? e.clientX : e.clientY;
+            var startSize = current();
+            var size = startSize;
+
+            function onMove(ev) {
+                var delta = (opts.axis === 'x' ? ev.clientX : ev.clientY) - startPos;
+                size = apply(startSize + delta * opts.direction);
+            }
+            function onUp() {
+                gutter.removeEventListener('pointermove', onMove);
+                gutter.removeEventListener('pointerup', onUp);
+                gutter.removeEventListener('pointercancel', onUp);
+                gutter.classList.remove('dragging');
+                document.body.classList.remove('is-resizing', 'resize-x', 'resize-y');
+                save(size);
+            }
+            gutter.addEventListener('pointermove', onMove);
+            gutter.addEventListener('pointerup', onUp);
+            gutter.addEventListener('pointercancel', onUp);
+        });
+
+        gutter.addEventListener('keydown', function(e) {
+            var step = e.shiftKey ? 60 : 20;
+            var keys = opts.axis === 'x' ? ['ArrowLeft', 'ArrowRight'] : ['ArrowUp', 'ArrowDown'];
+            var i = keys.indexOf(e.key);
+            if (i === -1) return;
+            e.preventDefault();
+            save(apply(current() + (i === 1 ? step : -step) * opts.direction));
+        });
+
+        gutter.addEventListener('dblclick', function() {
+            target.style.removeProperty(opts.cssVar);
+            try { localStorage.removeItem(opts.storageKey); } catch (e) {}
+        });
+    }
+
+    var evalSplit = document.getElementById('evalSplit');
+    var paneSide = document.getElementById('paneSide');
+
+    makeResizable({
+        gutter: document.getElementById('gutterVideo'),
+        target: evalSplit,
+        cssVar: '--video-h',
+        storageKey: 'eval-video-h',
+        axis: 'y',
+        direction: 1,
+        min: 160,
+        max: function() { return window.innerHeight - 110; },
+        current: function() { return video.getBoundingClientRect().height; }
+    });
+
+    makeResizable({
+        gutter: document.getElementById('gutterSide'),
+        target: evalSplit,
+        cssVar: '--side-w',
+        storageKey: 'eval-side-w',
+        axis: 'x',
+        direction: -1,  // dragging left makes the right panel wider
+        min: 280,
+        max: function() { return Math.max(280, evalSplit.getBoundingClientRect().width - 360); },
+        current: function() { return paneSide.getBoundingClientRect().width; }
+    });
+
+    // "Larger video": collapse the menu and let the video fill the screen height
+    var btnTheater = document.getElementById('btnTheater');
+    var sidebarEl = document.getElementById('sidebar');
+    var menuWasCollapsed = null;
+
+    function setTheater(on, remember) {
+        evalSplit.classList.toggle('theater', on);
+        btnTheater.setAttribute('aria-pressed', on ? 'true' : 'false');
+        btnTheater.querySelector('i').className = on ? 'fas fa-compress' : 'fas fa-expand';
+        btnTheater.querySelector('span').textContent = on ? 'Normal size' : 'Larger video';
+        if (sidebarEl) {
+            if (on) {
+                menuWasCollapsed = sidebarEl.classList.contains('collapsed');
+                if (!menuWasCollapsed) sidebarEl.classList.add('collapsed');
+            } else if (menuWasCollapsed === false) {
+                sidebarEl.classList.remove('collapsed');
+            }
+        }
+        if (remember) { try { localStorage.setItem('eval-theater', on ? '1' : '0'); } catch (e) {} }
+    }
+
+    btnTheater.addEventListener('click', function() {
+        var on = !evalSplit.classList.contains('theater');
+        setTheater(on, true);
+        if (on) video.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    try { if (localStorage.getItem('eval-theater') === '1') setTheater(true, false); } catch (e) {}
 
     loadCatalog();
     loadData();

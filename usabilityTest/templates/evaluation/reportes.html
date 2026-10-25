@@ -7,38 +7,30 @@
     <h2>Reports</h2>
     <p class="text-muted">Evaluation reports and statistics.</p>
 
-    <div class="row mt-4">
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title text-muted">Total Videos</h5>
-                    <h2>{{ total_videos }}</h2>
-                </div>
-            </div>
+    <div class="stat-strip">
+        <div class="stat">
+            <span class="stat-body">
+                <span class="stat-label"><span class="stat-dot"></span>Total videos</span>
+                <span class="stat-value">{{ total_videos }}</span>
+            </span>
         </div>
-        <div class="col-md-3">
-            <div class="card text-center border-success">
-                <div class="card-body">
-                    <h5 class="card-title text-success">Evaluations Completed</h5>
-                    <h2 class="text-success">{{ total_evaluaciones }}</h2>
-                </div>
-            </div>
+        <div class="stat tone-green">
+            <span class="stat-body">
+                <span class="stat-label"><span class="stat-dot"></span>Evaluations completed</span>
+                <span class="stat-value">{{ total_evaluaciones }}</span>
+            </span>
         </div>
-        <div class="col-md-3">
-            <div class="card text-center border-info">
-                <div class="card-body">
-                    <h5 class="card-title text-info">Total Annotations</h5>
-                    <h2 class="text-info">{{ total_anotaciones }}</h2>
-                </div>
-            </div>
+        <div class="stat tone-violet">
+            <span class="stat-body">
+                <span class="stat-label"><span class="stat-dot"></span>Total annotations</span>
+                <span class="stat-value">{{ total_anotaciones }}</span>
+            </span>
         </div>
-        <div class="col-md-3">
-            <div class="card text-center border-danger">
-                <div class="card-body">
-                    <h5 class="card-title text-danger">Problems Found</h5>
-                    <h2 class="text-danger">{{ total_problemas }}</h2>
-                </div>
-            </div>
+        <div class="stat tone-red">
+            <span class="stat-body">
+                <span class="stat-label"><span class="stat-dot"></span>Problems found</span>
+                <span class="stat-value">{{ total_problemas }}</span>
+            </span>
         </div>
     </div>
 

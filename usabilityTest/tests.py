@@ -45,12 +45,34 @@ class EvaluarVideoPageTests(TestCase):
         self.assertIn('Create new problem', body)
         self.assertIn('<th>Problem</th>', body)
         # problem creation lives only in the New Annotation combobox now
-        self.assertIn('id="problemSelect"', body)
+        self.assertNotIn('id="problemSelect"', body)
+        self.assertNotIn('id="problemForm"', body)
         self.assertNotIn('id="newProblemModal"', body)
         self.assertNotIn('id="btnSaveNewProblem"', body)
         self.assertNotIn('+ New Problem', body)
         # filtering is prefix-based: every visible item starts with what was typed
         self.assertIn('indexOf(q) === 0', body)
+
+    def test_page_renders_resizable_layout(self):
+        resp = self.client.get('/admin-panel/evaluar/testpay/testtask/')
+        body = resp.content.decode()
+        self.assertIn('id="evalSplit"', body)
+        self.assertIn('id="gutterVideo"', body)
+        self.assertIn('id="gutterSide"', body)
+        self.assertIn('id="sidebarResizer"', body)
+        # New Annotation lives in the right-hand panel
+        side = body.index('id="paneSide"')
+        self.assertGreater(body.index('id="annotationForm"'), side)
+        # Times are marked with the S / E shortcuts (documented in the guide); no Mark buttons
+        self.assertNotIn('Time Controls', body)
+        self.assertNotIn('id="btnMarkStart"', body)
+        self.assertNotIn('id="btnMarkEnd"', body)
+        self.assertIn('data-guide-section="shortcuts"', body)
+        self.assertIn('data-open-guide="shortcuts"', body)
+        # Annotations list sits right below the video, before Identified Problems
+        self.assertLess(body.index('id="videoPlayer"'), body.index('id="annotationsList"'))
+        self.assertLess(body.index('id="annotationsList"'), body.index('id="problemsList"'))
+        self.assertIn('id="btnTheater"', body)
 
     def test_annotation_saves_problema_field(self):
         payload = {
@@ -104,6 +126,42 @@ class AnnotationSheetTests(TestCase):
         })
         self.assertEqual(resp.status_code, 200)
         return Anotacion.objects.get(id=resp.json()['id'])
+
+    def test_annotation_registers_existing_problem_once(self):
+        # The same problem was already rated in another video: severity and type are reused
+        otra = Evaluacion.objects.create(video_id='other.webm', payment_id='pay2', task_id='1')
+        ProblemaIdentificado.objects.create(evaluacion=otra, problema=self.p1,
+                                            severidad='Critical', tipo='Layout', comentarios='other video')
+        resp = self.post('/admin-panel/api/%d/anotacion/' % self.evaluacion.id, {
+            'start_time': '00:10', 'finish_time': '00:14', 'problema_id': self.p1.id,
+            'indicador': 'DSF', 'contexto': 'Main task', 'comentarios': '',
+        })
+        nuevo = resp.json()['problema']
+        self.assertEqual(nuevo['problema_id'], self.p1.id)
+        self.assertEqual((nuevo['severidad'], nuevo['tipo'], nuevo['comentarios']), ('Critical', 'Layout', ''))
+
+        # A second annotation of the same problem does not duplicate it
+        resp = self.post('/admin-panel/api/%d/anotacion/' % self.evaluacion.id, {
+            'start_time': '00:30', 'finish_time': '', 'problema_id': self.p1.id,
+            'indicador': 'REP', 'contexto': 'Main task', 'comentarios': '',
+        })
+        self.assertIsNone(resp.json()['problema'])
+        self.assertEqual(self.evaluacion.problemas.filter(problema=self.p1).count(), 1)
+
+    def test_problem_never_rated_is_registered_without_severity(self):
+        self.add_annotation(self.p2)
+        reg = self.evaluacion.problemas.get(problema=self.p2)
+        self.assertEqual((reg.severidad, reg.tipo), ('', ''))
+
+    def test_editing_annotation_to_other_problem_registers_it(self):
+        ann = self.add_annotation(self.p1)
+        resp = self.post('/admin-panel/api/anotacion/%d/editar/' % ann.id, {
+            'start_time': '00:10', 'finish_time': '00:14', 'problema_id': self.p2.id,
+            'indicador': 'DSF', 'contexto': 'Main task', 'comentarios': '',
+        })
+        self.assertEqual(resp.json()['problema']['problema_id'], self.p2.id)
+        self.assertEqual(set(self.evaluacion.problemas.values_list('problema_id', flat=True)),
+                         {self.p1.id, self.p2.id})
 
     def test_annotation_links_to_catalog(self):
         ann = self.add_annotation(self.p1)
