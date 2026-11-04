@@ -10,3 +10,5 @@ admin.site.register(Approved_Testers)
 admin.site.register(InstructionsPage)
 admin.site.register(Evaluacion)
 admin.site.register(CatalogoProblema)
+
+from . import audio_report_admin

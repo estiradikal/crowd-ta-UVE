@@ -77,6 +77,9 @@ class ClickInfo(MarkdownModel):
 
 
 class TasksDescription(MarkdownModel):
+    integration_enabled = models.BooleanField(default=False)
+    application_url = models.URLField(blank=True, default="")
+    minimum_active_seconds = models.PositiveIntegerField(default=0)
     task_id = models.CharField(max_length=16, primary_key=True)
     task_description = models.TextField(null=True, default="Task description here")
     task_valid_question = models.TextField(null=True, default="Task validation question here")
@@ -86,6 +89,7 @@ class TasksDescription(MarkdownModel):
     MARKDOWN_FIELDS = (
         "task_id", "task_description", "task_valid_question",
         "valid_ans_options", "answer",
+        "integration_enabled", "application_url", "minimum_active_seconds",
     )
 
     def __str__(self):
@@ -280,3 +284,41 @@ class ProblemaIdentificado(models.Model):
 
     def __str__(self):
         return f"{self.problema.codigo} - {self.severidad}"
+
+
+class AudioMonitoringSession(models.Model):
+    """Resumen técnico del monitor; nunca almacena muestras de audio."""
+
+    session_id = models.UUIDField(primary_key=True, editable=False)
+    subject_id = models.CharField(max_length=128, db_index=True)
+    task_id = models.CharField(max_length=64, db_index=True)
+    client_version = models.CharField(max_length=32, default="unknown")
+    client_timezone = models.CharField(max_length=64, blank=True, default="")
+    client_utc_offset_minutes = models.SmallIntegerField(null=True, blank=True)
+    duration_seconds = models.PositiveIntegerField(default=0)
+    speech_seconds = models.PositiveIntegerField(default=0)
+    silence_seconds = models.PositiveIntegerField(default=0)
+    noise_seconds = models.PositiveIntegerField(default=0)
+    average_speech_probability = models.FloatField(default=0.0)
+    longest_silence_seconds = models.PositiveIntegerField(default=0)
+    speech_events = models.PositiveIntegerField(default=0)
+    non_speech_events = models.PositiveIntegerField(default=0)
+    vad_alerts = models.PositiveIntegerField(default=0)
+    music_alerts = models.PositiveIntegerField(default=0)
+    singing_alerts = models.PositiveIntegerField(default=0)
+    last_audio_label = models.CharField(max_length=64, blank=True, default="")
+    events = models.JSONField(default=list, blank=True)
+    finalized = models.BooleanField(default=False)
+    user_agent = models.CharField(max_length=512, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["subject_id", "task_id"], name="audio_subject_task_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.subject_id} - Task {self.task_id} - {self.session_id}"

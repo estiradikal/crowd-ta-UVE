@@ -1,0 +1,7 @@
+Django
+django-countries
+django-crispy-forms
+crispy-bootstrap4
+django-cors-headers
+django-extensions
+reportlab
