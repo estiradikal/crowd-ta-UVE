@@ -1,3 +1,5 @@
+from .audio_monitoring import update_audio_monitoring
+from .audio_report_views import download_own_audio_report
 from django.urls import path, re_path
 from . import views
 from django.conf import settings
@@ -5,6 +7,8 @@ from django.conf.urls.static import static
 
 
 urlpatterns = [
+    path('audio-monitoring/', update_audio_monitoring, name="audio_monitoring"),
+    path('audio-monitoring/my-report/<uuid:session_id>/', download_own_audio_report, name='own_audio_report_pdf'),
     path("registration/", views.user_registration, name="user_registration"),
    # re_path(r'^products/$', views.login_page, name="login_page"),
     path('payId/', views.payment_id, name="payment_id"),

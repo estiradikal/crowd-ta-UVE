@@ -1,0 +1,2 @@
+# Dependencia adicional para descargar informes de audio en PDF.
+reportlab>=4.2,<5

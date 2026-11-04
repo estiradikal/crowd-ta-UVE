@@ -17,10 +17,28 @@
     border: none;
     background: #fff;
   }
+  .audio-monitor-panel {
+    margin: 14px 0;
+    padding: 12px;
+    border: 1px solid #d9e2ec;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-size: 0.82rem;
+  }
+  .audio-monitor-panel h6 { margin-bottom: 4px; }
+  .audio-monitor-panel .monitor-note { color: #6c757d; display: block; margin-bottom: 10px; }
+  .audio-monitor-group { border-left: 4px solid #6c757d; padding-left: 9px; margin-top: 9px; }
+  .audio-monitor-row { display: flex; justify-content: space-between; gap: 8px; margin: 3px 0; }
+  .audio-monitor-value { font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+  #music-top-scores { display: block; color: #5c6770; margin-top: 5px; overflow-wrap: anywhere; }
 </style>
 {% endblock %}
 
 {% block page_content %}
+<div id="task-integration-config" hidden
+ data-enabled="{{ task.integration_enabled|yesno:'true,false' }}"
+ data-url="{{ task.application_url }}"
+ data-minimum="{{ task.minimum_active_seconds }}"></div>
 <input type="hidden" id="taskid" value="{{task.task_id}}">
 <input type="hidden" id="totaltasks" value="{{task_count}}">
 <input type="hidden" id="taskopts" value="{{options}}">
@@ -78,6 +96,7 @@
               </p>
               <span class="btn btn-primary" data-id="Start Task" id="startrec"> Start Task</span>
               <div class="TaskDone" style="display: none;">Are you done?
+                <p id="task-integration-status" role="status" aria-live="polite"></p>
                 <span class="btn btn-primary" data-toggle="collapse" href="#collapsetaskques" role="button"
                   id="TaskDone" data-id="Answer Task" aria-expanded="false">
                   Continue</span>
@@ -158,6 +177,26 @@
         </div>
 
       </div>
+      <section id="audio-debug-panel" class="audio-monitor-panel" hidden aria-hidden="true">
+        <h6>Monitor de audio</h6>
+        <small class="monitor-note">Análisis en el dispositivo. El monitor registra métricas, no copias adicionales del audio.</small>
+
+        <div id="vad-debug-panel" class="audio-monitor-group">
+          <div class="audio-monitor-row"><span>Voz</span><span id="vad-status" class="audio-monitor-value">ESPERANDO INICIO</span></div>
+          <div class="audio-monitor-row"><span>Probabilidad</span><span id="vad-probability" class="audio-monitor-value">0.0%</span></div>
+          <div class="audio-monitor-row"><span>Sin voz</span><span class="audio-monitor-value"><span id="vad-silence-time">0</span> s</span></div>
+        </div>
+
+        <div class="audio-monitor-group">
+          <div class="audio-monitor-row"><span>Audio</span><span id="music-status" class="audio-monitor-value">PREPARANDO MODELO</span></div>
+          <small id="music-top-scores">El modelo se carga en segundo plano.</small>
+        </div>
+
+        <div class="audio-monitor-row" style="margin-top: 9px;">
+          <span>Registro</span><span id="audio-sync-status" class="audio-monitor-value">ESPERANDO</span>
+        </div>
+      </section>
+
       <a class="float" data-toggle="collapse" class="btn btn-primary" href="#helpandinstructions" role="button"
         aria-expanded="false" aria-controls="helpandinstructions"><strong>Help</strong>
         <i class="fa fa-question-circle"></i>
@@ -175,6 +214,10 @@
       </div>
     </div>
     <div class="col-9 cam-left" id="ifr-dsp" style="display: none;">
+      {% if task.integration_enabled %}
+      <iframe id="task-application" title="Application under evaluation" width="100%" height="600"
+        style="border: 1px solid #ccc" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+      {% else %}
       <!-- Iframe embebido de la app de microtask (TU Ilmenau) -->
       <iframe 
           src="https://med23.rz.tu-ilmenau.de/58319/mw/start?mwId={{ request.session.workerId|default:'DEMO2' }}&amp;campId={{ request.session.campId|default:'demo' }}" 
@@ -186,6 +229,8 @@
           referrerpolicy="strict-origin-when-cross-origin"
           allowfullscreen>
       </iframe>
+
+      {% endif %}
 
       <div class="recorded-output" data-id="review" style="display: none;">
         <div class="wrapper">
@@ -275,22 +320,28 @@
 
 <!-- notification -->
 <div id="notify">
-  <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
+  <div id="vad-warning-toast" class="toast d-none" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
     <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
       <span aria-hidden="true" data-id="close notification">&times;</span>
     </button>
-    <div class="toast-body" style="background-color: rgb(10, 168, 57);">
+    <div class="toast-body" style="background-color: #dc3545;">
       <strong class="mr-auto">
-        <h5 style="color:white; text-align: center;"> Please, keep talking!</h5>
+        <h5 id="vad-alert-message" style="color:white; text-align: center;">Please continue thinking aloud during the task.</h5>
       </strong>
 
     </div>
   </div>
+  <div id="music-warning-toast" class="toast d-none" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false" style="margin-top: 8px;">
+    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+      <span aria-hidden="true" data-id="close music notification">&times;</span>
+    </button>
+    <div class="toast-body" style="background-color: #fd7e14;">
+      <strong class="mr-auto">
+        <h5 id="music-alert-message" style="color:white; text-align: center;">Possible music detected.</h5>
+      </strong>
+    </div>
+  </div>
 </div>
-
-
-
-<!-- upload notification -->
 
 <div id="load" style="display: none;">
   <div class="loading">
@@ -305,8 +356,13 @@
 {% block custom_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.wasm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.31/dist/bundle.min.js"></script>
+<script src="{% static '/js/audio-monitoring-session.js' %}" type="text/javascript"></script>
+<script src="{% static '/js/vad-monitor.js' %}" type="text/javascript"></script>
+<script src="{% static '/js/music-monitor.js' %}" type="text/javascript"></script>
+<script src="{% static '/js/task-integration.js' %}"></script>
 <script src="{% static '/js/mediarecoder.js' %}" type="text/javascript"></script>
-<script src="{% static '/js/soundmeter.js' %}" type="text/javascript"></script>
 <script src="{% static '/js/tasksinfomanager.js' %}" type="text/javascript"></script>
 <script src="{% static '/js/positiontracker.js' %}" type="text/javascript"></script>
 <script>

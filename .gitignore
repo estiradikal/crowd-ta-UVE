@@ -131,3 +131,9 @@ dmypy.json
 __pycache__/
 *.py[cod]
 db.sqlite3
+# Local recordings and generated reports
+usabilityTest/uploads/
+Source_Code/usabilityTest/uploads/
+staticfiles/
+db_respaldo.sqlite3
+*.sqlite3-journal

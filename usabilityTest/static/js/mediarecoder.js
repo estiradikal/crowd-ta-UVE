@@ -5,7 +5,6 @@ $ = jQuery;
 $(document).ready(function () {
   console.log("Task initiated!");
 
-  // Declare variabes here
   let mediaRecorder;
   let recordedBlobs;
   let camStream;
@@ -40,13 +39,8 @@ $(document).ready(function () {
   const camOnOff = document.querySelector('button#cam-status');
   const taskDone = document.querySelector('span#TaskDone');
 
-
-
-
-  // Functions
-
-
   function QuestionHandler() {
+    if (window.CrowdTaskGate && !window.CrowdTaskGate.canContinue()) return;
     $(".curr-task .step:nth-child(2)").removeClass('step-active');
     $(".curr-task .step:nth-child(2)").addClass('step-done');
     $(".curr-task .step:nth-child(2) i").removeAttr("style");
@@ -54,7 +48,6 @@ $(document).ready(function () {
     $(".taskInfo").collapse("hide");
     $(".TaskDone").css("display", "none");
   }
-
 
   async function StartCamera() {
     try {
@@ -106,7 +99,6 @@ $(document).ready(function () {
 
   }
 
-
   function CameraHandler() {
     if ($(this).val() === "off") {
       setTimeout(StartCamera, 100);
@@ -141,7 +133,7 @@ $(document).ready(function () {
     fd.append('file', blob);
     fd.append('taskid', currntTask);
     $('#load').removeAttr('style');
-    $.ajax({
+    return $.ajax({
       type: 'POST',
       url: '/upload/',
       data: fd,
@@ -179,7 +171,7 @@ $(document).ready(function () {
 
     fd.append('taskq', answer);
     fd.append('taskid', taskid);
-    $.ajax({
+    return $.ajax({
       type: 'POST',
       url: '/validate/',
       data: fd,
@@ -214,20 +206,23 @@ $(document).ready(function () {
     }
   }
 
-
-  async function handleVolume(audioContext) {
-    const soundMeter = window.soundMeter = new SoundMeter(audioContext);
-    soundMeter.connectToSource(window.stream);
-
-  }
-
   async function stopRecording() {
-
-    if (mediaRecorder.state == "recording") {
-      await mediaRecorder.stop();
-      await window.audioContext.close();
+    if (mediaRecorder && mediaRecorder.state == "recording") {
+      await new Promise((resolve) => {
+        mediaRecorder.addEventListener('stop', resolve, { once: true });
+        mediaRecorder.stop();
+      });
     }
-    StopIdleTimeCheck();
+    let vadSummary = {};
+    if (typeof window.StopVADAnalysisAndSave === "function") {
+      vadSummary = await window.StopVADAnalysisAndSave();
+    }
+    if (typeof window.stopCrowdMusicAnalysis === "function") {
+      await window.stopCrowdMusicAnalysis("finalizado");
+    }
+    if (window.CrowdAudioSession) {
+      await window.CrowdAudioSession.finish(vadSummary);
+    }
   }
 
   async function startRecording() {
@@ -248,7 +243,6 @@ $(document).ready(function () {
 
     try {
       mediaRecorder = new MediaRecorder(window.stream, options);
-      window.audioContext = new AudioContext();
     } catch (e) {
       console.error('Exception while creating MediaRecorder:', e.name);
       return;
@@ -260,8 +254,24 @@ $(document).ready(function () {
     };
     mediaRecorder.ondataavailable = handleDataAvailable;
     mediaRecorder.start();
+    if (window.CrowdTaskGate) window.CrowdTaskGate.start();
     console.log('MediaRecorder started', mediaRecorder);
-    handleVolume(window.audioContext);
+
+    if (window.CrowdAudioSession) {
+      window.CrowdAudioSession.start($("#taskid").val());
+    }
+
+    // Los analizadores trabajan con copias del audio y no bloquean la grabación.
+    if (typeof window.startCrowdVAD === "function") {
+      void window.startCrowdVAD(window.stream).catch((error) => {
+        console.error('[VAD] No se pudo iniciar el monitor:', error);
+      });
+    }
+    if (typeof window.startCrowdMusicAnalysis === "function") {
+      void window.startCrowdMusicAnalysis(window.stream).catch((error) => {
+        console.error('[MUSIC] No se pudo iniciar el monitor:', error);
+      });
+    }
 
     $("#ifr-dsp").removeAttr("style");
     $(".taskQ").removeAttr("style");
@@ -274,16 +284,13 @@ $(document).ready(function () {
     try {
       console.log('getUserMedia() got stream:', stream);
       window.stream = stream;
-      new Promise(startRecording).then(handleVolume);
+      await startRecording();
     } catch (e) {
       console.log('Stream didnot received :', e)
       location.reload();
     }
 
-
-
   }
-
 
   async function Start_Screen_Share(audioSettingts, videoSettings) {
     if (navigator.mediaDevices === undefined) {
@@ -291,7 +298,6 @@ $(document).ready(function () {
     }
     try {
       let screenStream = await navigator.mediaDevices.getDisplayMedia(videoSettings);
-
       const settings = screenStream.getVideoTracks()[0].getSettings();
       if (settings.displaySurface && settings.displaySurface !== 'browser') {
         screenStream.getTracks().forEach(function (t) { t.stop(); });
@@ -302,7 +308,7 @@ $(document).ready(function () {
 
       let mic = await navigator.mediaDevices.getUserMedia(audioSettingts);
       screenStream.addTrack(mic.getTracks()[0]);
-      handleSuccess(screenStream);
+      await handleSuccess(screenStream);
     } catch (err) {
       console.log(err); /* handle the error */
     if (err.name == "NotFoundError" || err.name == "DevicesNotFoundError") {
@@ -334,34 +340,31 @@ $(document).ready(function () {
     $(".curr-task .step:nth-child(4)").addClass('step-active');
   }
 
-  function EndTask(e) {
+  async function EndTask(e) {
     e.preventDefault();
+    if (window.CrowdTaskGate && !window.CrowdTaskGate.canContinue()) return;
     if ($("#taskq").val()) {
-
+      endTaskRec.disabled = true;
       try {
-        setTimeout(updateValidationAnswer, 100);
-        new Promise(stopRecording);
+        await updateValidationAnswer();
+        await stopRecording();
         $("#ifr-rec iframe").css("display", "none");
-        setTimeout(UploadRecordingToServer, 500);
+
+        if (window.stream) {
+          window.stream.getTracks().forEach(function (track) {
+            if (track.readyState == 'live') track.stop();
+          });
+        }
+        if (camStream) {
+          camStream.getTracks().forEach(function (track) {
+            if (track.readyState == 'live' && track.kind === 'video') track.stop();
+          });
+        }
+        await UploadRecordingToServer();
       } catch (error) {
         console.log('error in ending task :', error)
-      }
-
-
-      if (stream) {
-        stream.getVideoTracks()[0].stop();
-        stream.getTracks().forEach(function (track) {
-          if (track.readyState == 'live' && track.kind === 'audio') {
-            track.stop();
-          }
-        });
-      }
-      if (camStream) {
-        camStream.getTracks().forEach(function (track) {
-          if (track.readyState == 'live' && track.kind === 'video') {
-            track.stop();
-          }
-        });
+        endTaskRec.disabled = false;
+        alert('No fue posible finalizar la tarea. Revisa tu conexión e inténtalo nuevamente.');
       }
     } else {
       alert("Please enter the answer");
@@ -376,7 +379,6 @@ $(document).ready(function () {
     }
     setTimeout(StartCamera, 300);
   };
-
 
   function ValidateSelect() {
     var radioValue = $("#taskq").val();
