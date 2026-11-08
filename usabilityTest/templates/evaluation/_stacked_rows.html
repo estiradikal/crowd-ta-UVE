@@ -1,0 +1,26 @@
+{% load panel_i18n %}
+{% comment %}Barras apiladas completados / en progreso / pendientes. Recibe rows y kind ("campaign" o "task").{% endcomment %}
+{% if rows %}
+<ul class="stacks">
+    {% for row in rows %}
+    <li>
+        <div class="stack-head">
+            <span class="stack-label">
+                {% if row.key is None %}{% t "Other" %}
+                {% elif kind == "campaign" %}{% if row.key %}{% t "Campaign" %} {{ row.key }}{% else %}{% t "No campaign" %}{% endif %}
+                {% else %}{% t "Task" %} {{ row.key }}{% endif %}
+            </span>
+            <span class="stack-total"><strong>{{ row.completed }}</strong>/{{ row.total }} · {{ row.pct_done }}%</span>
+        </div>
+        <span class="stack-track" style="width: {{ row.width }}%">
+            {% for seg in row.segments %}
+            <span class="stack-seg st-{{ seg.key }}" style="flex-grow: {{ seg.value }}" tabindex="0"
+                  data-tip="{% for k, label, icon in video_states %}{% if k == seg.key %}{% t label %}{% endif %}{% endfor %}: {{ seg.value }}"></span>
+            {% endfor %}
+        </span>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="empty"><i class="fas fa-video-slash"></i> {% t "No videos available" %}</p>
+{% endif %}

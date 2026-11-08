@@ -3,11 +3,41 @@
 
 {% block title %}{% t "Dashboard" %} - {% t "Admin Panel" %}{% endblock %}
 
-{% block content %}
-<div class="dashboard">
-    <h2>{% t "Dashboard" %}</h2>
-    <p class="text-muted">{% t "Welcome to the administration panel" %}</p>
+{% block extra_css %}<link rel="stylesheet" href="/static/css/dashboard.css?v={{ asset_v }}">{% endblock %}
 
+{% block content %}
+<div class="dash">
+
+    <!-- ================= Bienvenida + acciones rápidas ================= -->
+    <section class="dash-hero">
+        <div class="hero-text">
+            <p class="hero-date" id="heroDate"></p>
+            <h2 class="hero-title">
+                <span id="heroGreeting" data-morning="{% t 'Good morning' %}" data-afternoon="{% t 'Good afternoon' %}"
+                      data-evening="{% t 'Good evening' %}">{% t "Hello" %}</span>,
+                {{ user.first_name|default:user.username }}
+            </h2>
+            <p class="hero-sub">
+                {% if stats.pendientes > 0 %}
+                    {% t "Videos waiting for evaluation" %}: <strong>{{ stats.pendientes }}</strong>
+                {% else %}
+                    {% t "All videos are evaluated. Great job!" %}
+                {% endif %}
+            </p>
+            <div class="hero-actions">
+                <a class="hero-btn" href="/admin-panel/videos/"><i class="fas fa-video"></i> {% t "View Videos" %}</a>
+                <a class="hero-btn" href="/admin-panel/reportes/"><i class="fas fa-chart-line"></i> {% t "View Reports" %}</a>
+                <button class="hero-btn" type="button" data-open-guide="workflow"><i class="fas fa-book-open"></i> {% t "Evaluation Guide" %}</button>
+            </div>
+        </div>
+        <dl class="hero-metrics">
+            <div><dt>{% t "Annotations" %}</dt><dd>{{ total_annotations }}</dd></div>
+            <div><dt>{% t "Problems found" %}</dt><dd>{{ total_problems }}</dd></div>
+            <div><dt>{% t "Avg. time per video" %}</dt><dd>{{ avg_time }}</dd></div>
+        </dl>
+    </section>
+
+    <!-- ================= Indicadores principales ================= -->
     <div class="stat-strip">
         <a href="/admin-panel/videos/" class="stat">
             <span class="stat-body">
@@ -36,62 +66,201 @@
         </a>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-clock"></i> {% t "Recent Evaluations" %}
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>{% t "Worker ID" %}</th>
-                                <th>{% t "Task" %}</th>
-                                <th>{% t "Status" %}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for ev in evaluaciones_recientes %}
-                            <tr>
-                                <td>{{ ev.payment_id }}</td>
-                                <td>{{ ev.task_id }}</td>
-                                <td>
-                                    {% if ev.completada %}
-                                        <span class="badge badge-success">{% t "Completed" %}</span>
-                                    {% else %}
-                                        <span class="badge badge-warning">{% t "In Progress" %}</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center text-muted">{% t "No evaluations yet" %}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+    <!-- ================= Progreso general + por campaña ================= -->
+    <div class="dash-grid cols-1-2">
+        <section class="panel">
+            <header class="panel-head">
+                <h3><i class="fas fa-chart-pie"></i> {% t "Evaluation progress" %}</h3>
+                <span class="panel-note">{{ progress_total }} {% t "videos" %}</span>
+            </header>
+            {% if progress_total %}
+            <div class="donut-wrap">
+                <svg class="donut" viewBox="0 0 42 42" role="img" aria-label="{% t 'Evaluation progress' %}: {{ progress_pct }}% {% t 'completed' %}">
+                    <circle class="donut-track" cx="21" cy="21" r="15.915"></circle>
+                    {% for seg in progress_segments %}
+                    <circle class="donut-seg st-{{ seg.key }}" cx="21" cy="21" r="15.915"
+                            stroke-dasharray="{{ seg.dash }}" stroke-dashoffset="{{ seg.offset }}"
+                            tabindex="0" data-tip="{% for k, label, icon in video_states %}{% if k == seg.key %}{% t label %}{% endif %}{% endfor %}: {{ seg.value }} ({{ seg.pct }}%)"></circle>
+                    {% endfor %}
+                </svg>
+                <div class="donut-center">
+                    <strong>{{ progress_pct }}%</strong>
+                    <span>{% t "completed" %}</span>
                 </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-bolt"></i> {% t "Quick Actions" %}
-                </div>
-                <div class="card-body">
-                    <a href="/admin-panel/videos/" class="btn btn-primary btn-block mb-2">
-                        <i class="fas fa-video"></i> {% t "View Videos" %}
-                    </a>
-                    <a href="/admin-panel/reportes/" class="btn btn-outline-primary btn-block mb-2">
-                        <i class="fas fa-chart-line"></i> {% t "View Reports" %}
-                    </a>
-                    <a href="/admin-panel/guia/" class="btn btn-outline-secondary btn-block">
-                        <i class="fas fa-book"></i> {% t "Evaluation Guide" %}
-                    </a>
+            <ul class="legend">
+                {% for item in progress_legend %}
+                <li>
+                    <span class="swatch st-{{ item.key }}"></span>
+                    <i class="fas {{ item.icon }} legend-icon"></i>
+                    <span class="legend-label">{% t item.label %}</span>
+                    <strong class="legend-value">{{ item.value }}</strong>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty"><i class="fas fa-video-slash"></i> {% t "No videos available" %}</p>
+            {% endif %}
+        </section>
+
+        <section class="panel">
+            <header class="panel-head">
+                <h3><i class="fas fa-bullhorn"></i> {% t "Videos by campaign" %}</h3>
+                <ul class="legend inline">
+                    {% for k, label, icon in video_states %}<li><span class="swatch st-{{ k }}"></span>{% t label %}</li>{% endfor %}
+                </ul>
+            </header>
+            {% include "evaluation/_stacked_rows.html" with rows=campaign_rows kind="campaign" %}
+        </section>
+    </div>
+
+    <!-- ================= Por tarea + severidad + indicadores ================= -->
+    <div class="dash-grid cols-3">
+        <section class="panel">
+            <header class="panel-head">
+                <h3><i class="fas fa-tasks"></i> {% t "Videos by task" %}</h3>
+            </header>
+            {% include "evaluation/_stacked_rows.html" with rows=task_rows kind="task" %}
+        </section>
+
+        <section class="panel">
+            <header class="panel-head">
+                <h3><i class="fas fa-exclamation-triangle"></i> {% t "Problems by severity" %}</h3>
+                <span class="panel-note">{{ severity_total }}</span>
+            </header>
+            {% if severity_total %}
+            <div class="donut-wrap small">
+                <svg class="donut" viewBox="0 0 42 42" role="img" aria-label="{% t 'Problems by severity' %}">
+                    <circle class="donut-track" cx="21" cy="21" r="15.915"></circle>
+                    {% for seg in severity_segments %}
+                    <circle class="donut-seg sev-{{ seg.key|lower }}" cx="21" cy="21" r="15.915"
+                            stroke-dasharray="{{ seg.dash }}" stroke-dashoffset="{{ seg.offset }}"
+                            tabindex="0" data-tip="{% t seg.key %}: {{ seg.value }} ({{ seg.pct }}%)"></circle>
+                    {% endfor %}
+                </svg>
+                <div class="donut-center">
+                    <strong>{{ severity_total }}</strong>
+                    <span>{% t "problems" %}</span>
                 </div>
             </div>
-        </div>
+            <ul class="legend">
+                {% for item in severity_legend %}
+                <li>
+                    <span class="swatch sev-{{ item.key }}"></span>
+                    <i class="fas {{ item.icon }} legend-icon"></i>
+                    <span class="legend-label">{% t item.label %}</span>
+                    <strong class="legend-value">{{ item.value }}</strong>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty"><i class="fas fa-check-circle"></i> {% t "No problems registered yet." %}</p>
+            {% endif %}
+        </section>
+
+        <section class="panel">
+            <header class="panel-head">
+                <h3><i class="fas fa-tags"></i> {% t "Most used indicators" %}</h3>
+                <button type="button" class="panel-help" data-open-guide="indicators" title="{% t 'Indicators' %}"><i class="fas fa-question-circle"></i></button>
+            </header>
+            {% if top_indicators %}
+            <ul class="hbars">
+                {% for ind in top_indicators %}
+                <li tabindex="0" data-tip="{{ ind.code }}: {{ ind.value }} {% t 'annotations' %}">
+                    <code class="hbar-label">{{ ind.code }}</code>
+                    <span class="hbar-track"><span class="hbar-fill{% if forloop.first %} lead{% endif %}" style="width: {{ ind.width }}%"></span></span>
+                    <span class="hbar-value">{{ ind.value }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty"><i class="fas fa-tags"></i> {% t "No annotations yet." %}</p>
+            {% endif %}
+        </section>
+    </div>
+
+    <!-- ================= Actividad reciente ================= -->
+    <div class="dash-grid">
+        <section class="panel">
+            <header class="panel-head">
+                <h3><i class="fas fa-stream"></i> {% t "Recent activity" %}</h3>
+                <a class="panel-link" href="/admin-panel/videos/">{% t "View all" %} <i class="fas fa-arrow-right"></i></a>
+            </header>
+            {% if activity %}
+            <ol class="timeline">
+                {% for item in activity %}
+                <li>
+                    <span class="tl-avatar">
+                        {% if item.card.image %}<img src="{{ item.card.image }}" alt="">{% else %}<i class="fas fa-user"></i>{% endif %}
+                    </span>
+                    <div class="tl-body">
+                        <p class="tl-title">
+                            <strong>{{ item.card.name }}</strong>
+                            {% if item.ev.completada %}{% t "completed the evaluation of" %}{% else %}{% t "is evaluating" %}{% endif %}
+                            <a href="/admin-panel/evaluar/{{ item.ev.payment_id }}/{{ item.ev.task_id }}/">{{ item.worker }} · {% t "Task" %} {{ item.ev.task_id }}</a>
+                        </p>
+                        <p class="tl-meta">
+                            {% if item.ev.completada %}
+                            <span class="chip st-completed"><i class="fas fa-check-circle"></i> {% t "Completed" %}</span>
+                            {% else %}
+                            <span class="chip st-in_progress"><i class="fas fa-hourglass-half"></i> {% t "In Progress" %}</span>
+                            {% endif %}
+                            {% if item.when %}<time datetime="{{ item.when|date:'c' }}" class="tl-time">{{ item.when|date:"Y-m-d H:i" }}</time>{% endif %}
+                        </p>
+                    </div>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            <p class="empty"><i class="fas fa-inbox"></i> {% t "No evaluations yet" %}</p>
+            {% endif %}
+        </section>
+
     </div>
 </div>
+
+<div class="chart-tip" id="chartTip" role="tooltip" hidden></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    // Saludo y fecha según la hora local del navegador
+    var now = new Date(), h = now.getHours();
+    var g = document.getElementById('heroGreeting');
+    g.textContent = h < 12 ? g.dataset.morning : h < 19 ? g.dataset.afternoon : g.dataset.evening;
+    try {
+        document.getElementById('heroDate').textContent = now.toLocaleDateString(document.documentElement.lang,
+            { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (e) {}
+
+    // Fechas de la actividad en hora local
+    document.querySelectorAll('time.tl-time').forEach(function (t) {
+        var d = new Date(t.getAttribute('datetime'));
+        if (!isNaN(d)) t.textContent = d.toLocaleString(document.documentElement.lang,
+            { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    });
+
+    // Tooltip compartido para todos los gráficos (ratón y teclado)
+    var tip = document.getElementById('chartTip');
+    function show(el, x, y) {
+        tip.textContent = el.getAttribute('data-tip');
+        tip.hidden = false;
+        var r = tip.getBoundingClientRect();
+        var left = Math.min(window.innerWidth - r.width - 8, Math.max(8, x - r.width / 2));
+        tip.style.left = left + 'px';
+        tip.style.top = Math.max(8, y - r.height - 12) + 'px';
+    }
+    function hide() { tip.hidden = true; }
+    document.querySelectorAll('.dash [data-tip]').forEach(function (el) {
+        el.addEventListener('mousemove', function (e) { show(el, e.clientX, e.clientY); });
+        el.addEventListener('mouseleave', hide);
+        el.addEventListener('focus', function () {
+            var r = el.getBoundingClientRect();
+            show(el, r.left + r.width / 2, r.top);
+        });
+        el.addEventListener('blur', hide);
+    });
+})();
+</script>
 {% endblock %}

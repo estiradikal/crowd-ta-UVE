@@ -10,8 +10,8 @@ from django.db import IntegrityError
 from django.db.models import F, Q
 from django.utils import timezone, translation
 
-from .models import (Evaluacion, Anotacion, ProblemaIdentificado, CatalogoProblema, SubjectProfile, Test_Input,
-                     EvaluatorProfile, parse_mmss)
+from .models import (Evaluacion, Anotacion, ProblemaIdentificado, CatalogoProblema, SubjectProfile, Test_Input, DEMO_CAMP_ID,
+                     EvaluatorProfile, TasksDescription, parse_mmss)
 from .forms import AccountForm, PreferencesForm, ShortcutsForm, Test_InputForm
 from .panel_preferences import (ACCENT_COLORS, LANGUAGES, NAMED_KEYS, SHORTCUT_ACTIONS, accent_palette, accent_style,
                                 resolve_shortcuts, shortcut_label, translate)
@@ -22,15 +22,148 @@ def staff_member_required(view_func):
     return _staff_member_required(view_func, login_url='panel_login')
 
 
+# Estados de un video en el dashboard: (clave, etiqueta, icono)
+VIDEO_STATES = (
+    ('completed', 'Completed', 'fa-check-circle'),
+    ('in_progress', 'In Progress', 'fa-hourglass-half'),
+    ('pending', 'Pending', 'fa-clock'),
+)
+SEVERITIES = (
+    ('Critical', 'fa-exclamation-circle'),
+    ('Serious', 'fa-exclamation-triangle'),
+    ('Cosmetic', 'fa-paint-brush'),
+)
+MAX_BAR_ROWS = 6
+
+
+def _donut(counts, keys):
+    """Segmentos de un anillo SVG (círculo de perímetro 100) con un pequeño hueco entre ellos."""
+    total = sum(counts.get(k, 0) for k in keys)
+    segments, offset = [], 0.0
+    shown = [k for k in keys if counts.get(k)]
+    gap = 1.2 if len(shown) > 1 else 0
+    for key in keys:
+        value = counts.get(key, 0)
+        pct = 100.0 * value / total if total else 0
+        if value:
+            segments.append({'key': key, 'value': value, 'pct': round(pct),
+                             'dash': '%.2f %.2f' % (max(pct - gap, 0.5), 100 - max(pct - gap, 0.5)),
+                             'offset': '%.2f' % (25 - offset)})
+        offset += pct
+    return total, segments
+
+
+def _stacked_rows(groups, label_of):
+    """Filas de barras apiladas completadas/en progreso/pendientes, la más grande primero."""
+    rows = sorted(groups.items(), key=lambda kv: (-sum(kv[1].values()), str(kv[0])))
+    if len(rows) > MAX_BAR_ROWS:
+        other = {k: 0 for k, _, _ in VIDEO_STATES}
+        for _, counts in rows[MAX_BAR_ROWS - 1:]:
+            for k in other:
+                other[k] += counts.get(k, 0)
+        rows = rows[:MAX_BAR_ROWS - 1] + [(None, other)]
+    biggest = max((sum(c.values()) for _, c in rows), default=0) or 1
+    result = []
+    for key, counts in rows:
+        total = sum(counts.values())
+        result.append({
+            'key': key,
+            'label': label_of(key),
+            'total': total,
+            'completed': counts.get('completed', 0),
+            'pct_done': round(100.0 * counts.get('completed', 0) / total) if total else 0,
+            'width': round(100.0 * total / biggest, 1),
+            'segments': [{'key': k, 'value': counts.get(k, 0),
+                          'pct': round(100.0 * counts.get(k, 0) / total, 2) if total else 0}
+                         for k, _, _ in VIDEO_STATES if counts.get(k)],
+        })
+    return result
+
+
+def _format_duration(seconds):
+    seconds = int(seconds or 0)
+    if seconds >= 3600:
+        return '%dh %02dm' % (seconds // 3600, seconds % 3600 // 60)
+    return '%dm %02ds' % (seconds // 60, seconds % 60)
+
+
+def _user_cards(usernames):
+    """Nombre visible e imagen de perfil de cada evaluador (por nombre de usuario)."""
+    from django.contrib.auth.models import User
+    cards = {}
+    for u in User.objects.filter(username__in=[n for n in usernames if n]).select_related('evaluator_profile'):
+        try:
+            image = u.evaluator_profile.image_url
+        except EvaluatorProfile.DoesNotExist:
+            image = ''
+        cards[u.username] = {'name': u.get_full_name() or u.username, 'image': image}
+    return cards
+
+
 @staff_member_required
 def dashboard(request):
     stats = get_stats()
-    evaluaciones_recientes = Evaluacion.objects.all().order_by('-id')[:5]
+    videos = get_uploaded_videos()
+    evaluaciones = {(ev.payment_id, ev.task_id): ev for ev in Evaluacion.objects.all()}
+    campaigns = {p.payment_id: p.campId for p in SubjectProfile.objects.all()}
+    tasks = {t.task_id: t.task_description for t in TasksDescription.objects.all()}
+
+    status_counts = {k: 0 for k, _, _ in VIDEO_STATES}
+    by_campaign, by_task = {}, {}
+    for v in videos:
+        ev = evaluaciones.get((v['payment_id'], v['task_id']))
+        state = 'completed' if ev and ev.completada else 'in_progress' if ev else 'pending'
+        status_counts[state] += 1
+        for groups, key in ((by_campaign, campaigns.get(v['payment_id']) or ''), (by_task, v['task_id'])):
+            groups.setdefault(key, {k: 0 for k, _, _ in VIDEO_STATES})[state] += 1
+
+    progress_total, progress_segments = _donut(status_counts, [k for k, _, _ in VIDEO_STATES])
+
+    severity_counts = {}
+    for sev in ProblemaIdentificado.objects.values_list('severidad', flat=True):
+        severity_counts[sev] = severity_counts.get(sev, 0) + 1
+    severity_total, severity_segments = _donut(severity_counts, [k for k, _ in SEVERITIES])
+
+    indicator_counts = {}
+    for ind in Anotacion.objects.values_list('indicador', flat=True):
+        indicator_counts[ind] = indicator_counts.get(ind, 0) + 1
+    top_indicators = sorted(indicator_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:6]
+    top_value = top_indicators[0][1] if top_indicators else 1
+
+    completed = Evaluacion.objects.filter(completada=True)
+    recientes = list(Evaluacion.objects.order_by(F('fecha_fin').desc(nulls_last=True), '-fecha_inicio', '-id')[:6])
+    cards = _user_cards([ev.evaluador for ev in recientes])
+    workers = {p.payment_id: p.workerId for p in SubjectProfile.objects.all()}
+    activity = [
+        {'ev': ev, 'worker': workers.get(ev.payment_id, ev.payment_id[:12]),
+         'card': cards.get(ev.evaluador, {'name': ev.evaluador or '—', 'image': ''}),
+         'when': ev.fecha_fin or ev.fecha_inicio}
+        for ev in recientes
+    ]
+    active_seconds = [ev.tiempo_activo_segundos for ev in completed]
 
     context = {
         'active_page': 'dashboard',
         'stats': stats,
-        'evaluaciones_recientes': evaluaciones_recientes,
+        'video_states': VIDEO_STATES,
+        'severities': SEVERITIES,
+        'progress_total': progress_total,
+        'progress_segments': progress_segments,
+        'progress_legend': [{'key': k, 'label': label, 'icon': icon, 'value': status_counts[k]}
+                            for k, label, icon in VIDEO_STATES],
+        'progress_pct': round(100.0 * status_counts['completed'] / progress_total) if progress_total else 0,
+        'severity_total': severity_total,
+        'severity_segments': severity_segments,
+        'severity_legend': [{'key': k.lower(), 'label': k, 'icon': icon, 'value': severity_counts.get(k, 0)}
+                            for k, icon in SEVERITIES],
+        'campaign_rows': _stacked_rows(by_campaign, lambda k: k),
+        'task_rows': _stacked_rows(by_task, lambda k: k),
+        'task_descriptions': tasks,
+        'top_indicators': [{'code': c, 'value': n, 'width': round(100.0 * n / top_value)} for c, n in top_indicators],
+        'activity': activity,
+        'total_annotations': Anotacion.objects.count(),
+        'total_problems': ProblemaIdentificado.objects.count(),
+        'avg_time': _format_duration(sum(active_seconds) / len(active_seconds)) if active_seconds else '—',
     }
     return render(request, 'evaluation/dashboard.html', context)
 
@@ -90,7 +223,13 @@ def lista_videos(request):
 
     busqueda = request.GET.get('q', '').strip()
     if busqueda:
-        videos = [v for v in videos if busqueda.lower() in v['worker_id'].lower()]
+        q = busqueda.lower()
+        videos = [v for v in videos if q in v['worker_id'].lower() or q in v['payment_id'].lower()]
+
+    campana = request.GET.get('camp', '').strip()
+    if campana:
+        en_campana = set(SubjectProfile.objects.filter(campId=campana).values_list('payment_id', flat=True))
+        videos = [v for v in videos if v['payment_id'] in en_campana]
 
     total_videos = len(get_uploaded_videos())
     total_evaluated = Evaluacion.objects.filter(completada=True).count()
@@ -101,6 +240,7 @@ def lista_videos(request):
         'videos': videos,
         'filtro': filtro,
         'busqueda': busqueda,
+        'campana': campana,
         'stats': get_stats(),
     }
     return render(request, 'evaluation/lista_videos.html', context)
@@ -174,15 +314,55 @@ def get_stats():
         'total': len(videos),
         'evaluados': Evaluacion.objects.filter(completada=True).count(),
         'pendientes': len(videos) - Evaluacion.objects.filter(completada=True).count(),
-        'campanas': Test_Input.objects.count(),
+        'campanas': Test_Input.objects.exclude(campId=DEMO_CAMP_ID).count(),
     }
 
 
 @staff_member_required
 def campanas(request):
+    """Videos de los participantes que entraron con un enlace de campaña, en una tabla
+    como la de Videos (con la campaña de cada uno) y su estado, sin el botón de evaluar."""
+    evaluaciones = {(ev.payment_id, ev.task_id): ev for ev in Evaluacion.objects.all()}
+    # Solo participantes que entraron con un enlace de campaña (no los del enlace por defecto)
+    perfiles = (SubjectProfile.objects.exclude(campId__isnull=True).exclude(campId='')
+                .exclude(campId=DEMO_CAMP_ID).order_by('campId', 'workerId'))
+
+    videos_por_pago = {}
+    for v in get_uploaded_videos():
+        ev = evaluaciones.get((v['payment_id'], v['task_id']))
+        v['evaluada'] = ev is not None and ev.completada
+        v['en_progreso'] = ev is not None and not ev.completada
+        videos_por_pago.setdefault(v['payment_id'], []).append(v)
+
+    filas = []
+    for p in perfiles:
+        videos = sorted(videos_por_pago.get(p.payment_id, []), key=lambda v: (v['task_id'], v['date']))
+        for v in videos:
+            filas.append(dict(v, camp_id=p.campId))
+        if not videos:
+            # Participante registrado que aún no sube videos: se muestra para poder copiar su Worker ID
+            filas.append({'camp_id': p.campId, 'worker_id': p.workerId, 'payment_id': p.payment_id,
+                          'sin_video': True, 'evaluada': False, 'en_progreso': False})
+
+    filtro = request.GET.get('filtro', 'todos')
+    busqueda = request.GET.get('q', '').strip()
+    if filtro == 'pendientes':
+        filas = [f for f in filas if not f['evaluada'] and not f['en_progreso']]
+    elif filtro == 'en_progreso':
+        filas = [f for f in filas if f['en_progreso']]
+    elif filtro == 'completadas':
+        filas = [f for f in filas if f['evaluada']]
+    if busqueda:
+        # Por ID de campaña, Worker ID o ID del archivo
+        q = busqueda.lower()
+        filas = [f for f in filas if q in f['camp_id'].lower() or q in f['worker_id'].lower()
+                 or q in f['payment_id'].lower()]
+
     context = {
         'active_page': 'campanas',
-        'campanas_list': Test_Input.objects.all(),
+        'videos': filas,
+        'filtro': filtro,
+        'busqueda': busqueda,
         'stats': get_stats(),
     }
     return render(request, 'evaluation/campanas.html', context)
