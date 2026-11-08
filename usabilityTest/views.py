@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.exceptions import PermissionDenied
 from .forms import SubjectProfileForm
-from .models import SubjectProfile, TaskInfo, ClickInfo, TasksDescription, TaskStatus, Approved_Testers, Test_Input, InstructionsPage
+from .models import SubjectProfile, TaskInfo, ClickInfo, TasksDescription, TaskStatus, Approved_Testers, Test_Input, InstructionsPage, DEMO_CAMP_ID
 from django.http import JsonResponse, Http404
 from django.core.files.storage import FileSystemStorage
 from datetime import date
@@ -132,7 +132,7 @@ def update_clicks(request):
 def ins_page(request):
     # Valores por defecto fijos cuando no vienen en la URL
     DEFAULT_WORKER = 'DEMO2'
-    DEFAULT_CAMP = 'demo'
+    DEFAULT_CAMP = DEMO_CAMP_ID
     DEFAULT_GROUP = '1'
 
     # Obtener parámetros de la URL
@@ -150,6 +150,10 @@ def ins_page(request):
     request.session['workerId'] = worker_id
     request.session['campId'] = camp_id
     request.session['groupId'] = group_id
+
+    # Cada campId que llega por el enlace queda registrado como campaña (se ve en el panel)
+    if camp_id != DEMO_CAMP_ID:
+        Test_Input.objects.get_or_create(campId=camp_id[:64], defaults={'application_url': ''})
 
     # Generar payment_id
     secret_key = "#####SHOULD_BE_REPLACED#####"

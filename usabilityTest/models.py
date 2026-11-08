@@ -117,6 +117,10 @@ class TaskStatus(MarkdownModel):
         return self.subject_id
 
 
+# campId que se usa cuando alguien entra sin enlace de campaña: no es una campaña real
+DEMO_CAMP_ID = 'demo'
+
+
 class Test_Input(MarkdownModel):
     campId = models.CharField(max_length=64, primary_key=True, default="0")
     secret_key = models.CharField(max_length=100, null=True, default="secret-key")

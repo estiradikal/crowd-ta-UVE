@@ -6,20 +6,27 @@
 {% block content %}
 <div class="videos-list">
     <h2>{% t "Video List" %}</h2>
+    {% if campana %}
+    <p class="camp-filter">
+        <i class="fas fa-bullhorn"></i> {% t "Campaign" %}: <strong>{{ campana }}</strong>
+        <a href="/admin-panel/videos/" class="ml-2"><i class="fas fa-times"></i> {% t "Show all" %}</a>
+    </p>
+    {% endif %}
     
     <div class="row mb-3">
         <div class="col-md-6">
             <div class="btn-group">
-                <a href="?filtro=todos" class="btn btn-outline-secondary {% if filtro == 'todos' %}active{% endif %}">{% t "All" %}</a>
-                <a href="?filtro=pendientes" class="btn btn-outline-secondary {% if filtro == 'pendientes' %}active{% endif %}">{% t "Pending" %}</a>
-                <a href="?filtro=en_progreso" class="btn btn-outline-secondary {% if filtro == 'en_progreso' %}active{% endif %}">{% t "In Progress" %}</a>
-                <a href="?filtro=completadas" class="btn btn-outline-secondary {% if filtro == 'completadas' %}active{% endif %}">{% t "Completed" %}</a>
+                <a href="?filtro=todos{% if campana %}&camp={{ campana|urlencode }}{% endif %}" class="btn btn-outline-secondary {% if filtro == 'todos' %}active{% endif %}">{% t "All" %}</a>
+                <a href="?filtro=pendientes{% if campana %}&camp={{ campana|urlencode }}{% endif %}" class="btn btn-outline-secondary {% if filtro == 'pendientes' %}active{% endif %}">{% t "Pending" %}</a>
+                <a href="?filtro=en_progreso{% if campana %}&camp={{ campana|urlencode }}{% endif %}" class="btn btn-outline-secondary {% if filtro == 'en_progreso' %}active{% endif %}">{% t "In Progress" %}</a>
+                <a href="?filtro=completadas{% if campana %}&camp={{ campana|urlencode }}{% endif %}" class="btn btn-outline-secondary {% if filtro == 'completadas' %}active{% endif %}">{% t "Completed" %}</a>
             </div>
         </div>
         <div class="col-md-6">
             <form class="form-inline justify-content-end">
                 <input type="text" name="q" class="form-control mr-2" placeholder="{% t 'Search by Worker ID...' %}" value="{{ busqueda }}">
                 <input type="hidden" name="filtro" value="{{ filtro }}">
+                {% if campana %}<input type="hidden" name="camp" value="{{ campana }}">{% endif %}
                 <button type="submit" class="btn btn-primary">{% t "Search" %}</button>
             </form>
         </div>
@@ -41,22 +48,22 @@
             {% for video in videos %}
             <tr>
                 <td>
-                    {{ video.worker_id }}
-                    <button class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" onclick="navigator.clipboard.writeText('{{ video.worker_id }}')"><i class="fas fa-copy" aria-hidden="true"></i></button>
+                    <span class="file-name" title="{{ video.worker_id }}">{{ video.worker_id }}</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" data-copy="{{ video.worker_id }}"><i class="fas fa-copy" aria-hidden="true"></i></button>
                 </td>
                 <td>{{ video.task_id }}</td>
-                <td>{{ video.date }}</td>
+                <td class="text-nowrap">{{ video.date }}</td>
                 <td>
                     <span class="file-name" title="{{ video.filename|slice:"1:-5" }}">{{ video.filename|slice:"1:-5" }}</span>
-                    <button class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" onclick='navigator.clipboard.writeText("{{ video.filename|slice:"1:-5" }}")'><i class="fas fa-copy" aria-hidden="true"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" data-copy="{{ video.filename|slice:"1:-5" }}"><i class="fas fa-copy" aria-hidden="true"></i></button>
                 </td>
                 <td>
                     {% if video.evaluada %}
-                        <span class="status-badge status-completada">{% t "Completed" %}</span>
+                        <span class="status-badge status-completada"><i class="fas fa-check-circle"></i> {% t "Completed" %}</span>
                     {% elif video.en_progreso %}
-                        <span class="status-badge status-progreso">{% t "In Progress" %}</span>
+                        <span class="status-badge status-progreso"><i class="fas fa-hourglass-half"></i> {% t "In Progress" %}</span>
                     {% else %}
-                        <span class="status-badge status-pendiente">{% t "Pending" %}</span>
+                        <span class="status-badge status-pendiente"><i class="fas fa-clock"></i> {% t "Pending" %}</span>
                     {% endif %}
                 </td>
                 <td class="actions-col">

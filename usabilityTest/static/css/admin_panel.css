@@ -1403,3 +1403,124 @@ body, .card, .settings-card, .admin-sidebar, .table, .form-control, .modal-conte
 [data-theme="dark"] ::-webkit-scrollbar-track { background: var(--bg); }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; border: 2px solid var(--bg); }
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* =========================================================
+   Estado (videos y campañas), progreso y botón de copiar
+   ========================================================= */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: .76rem;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+.status-completada { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.status-progreso { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.status-pendiente { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+[data-theme="dark"] .status-completada { background: #052e16; color: #86efac; border-color: #166534; }
+[data-theme="dark"] .status-progreso { background: #451a03; color: #fcd34d; border-color: #92400e; }
+[data-theme="dark"] .status-pendiente { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+
+.camp-progress { display: flex; align-items: center; gap: 10px; min-width: 150px; }
+.camp-progress-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.camp-progress-bar span { display: block; height: 100%; border-radius: 4px; background: #0ca30c; }
+.camp-progress-text { font-size: .8rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.camp-progress-text strong { color: var(--text); }
+
+.filter-count {
+    display: inline-block;
+    min-width: 18px;
+    margin-left: 4px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: .72rem;
+    font-weight: 700;
+}
+.btn-outline-secondary.active .filter-count { background: rgba(255, 255, 255, .25); color: inherit; }
+
+.camp-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--text);
+    font-size: .85rem;
+}
+.camp-filter i { color: var(--accent); }
+
+.copy-btn.copied,
+.copy-btn.copied:hover {
+    background: #16a34a !important;
+    border-color: #16a34a !important;
+    color: #ffffff !important;
+}
+
+/* Tablas de Videos y Campañas: filas centradas y columna de acciones fija con el mismo color de la fila */
+.admin-table-wrap { background: var(--surface); border-radius: 10px; }
+.admin-table-wrap .table td { vertical-align: middle; }
+.admin-table-wrap tbody .actions-col { background-color: var(--surface); }
+.admin-table-wrap .table-striped tbody tr:nth-of-type(odd) .actions-col {
+    background-image: linear-gradient(rgba(0, 0, 0, .05), rgba(0, 0, 0, .05));
+}
+[data-theme="dark"] .admin-table-wrap .table-striped tbody tr:nth-of-type(odd) .actions-col {
+    background-image: linear-gradient(rgba(148, 163, 184, .06), rgba(148, 163, 184, .06));
+}
+.admin-table-wrap .table-hover tbody tr:hover .actions-col {
+    background-image: linear-gradient(rgba(0, 0, 0, .075), rgba(0, 0, 0, .075));
+}
+[data-theme="dark"] .admin-table-wrap .table-hover tbody tr:hover .actions-col {
+    background-color: var(--surface-2);
+    background-image: none;
+}
+.admin-table-wrap td { white-space: nowrap; }
+
+/* Campañas: participantes (Worker ID) desplegables */
+.workers-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.workers-toggle:hover, .workers-toggle[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.workers-toggle .chev { font-size: .65rem; transition: transform .15s; }
+.workers-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.workers-row > td { padding: 0 12px 12px 36px !important; background: var(--surface) !important; border-top: 0 !important; }
+.camp-table tbody tr.workers-row:hover { background: transparent; }
+.workers-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-solid);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface-2);
+    font-size: 12px;
+}
+.workers-table th {
+    padding: 7px 12px;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+}
+.workers-table td { padding: 7px 12px; border-top: 1px solid var(--border); vertical-align: middle; color: var(--text); }
+.workers-table tbody tr:first-child td { border-top: 0; }

@@ -1,12 +1,13 @@
 import json
 import os
 import shutil
+from unittest import mock
 
 from django.contrib.auth.models import User
 from django.test import TestCase
 
 from .evaluation_views import resumen_problemas
-from .models import Anotacion, CatalogoProblema, Evaluacion, ProblemaIdentificado
+from .models import Anotacion, CatalogoProblema, Evaluacion, ProblemaIdentificado, SubjectProfile, Test_Input
 
 UPLOADS_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
 TEST_UPLOAD_DIR = os.path.join(UPLOADS_DIR, 'testpay')
@@ -288,3 +289,107 @@ class TimeAnnotationAndGuideTests(TestCase):
         tabla = self.client.get('/admin-panel/tabla-anotaciones/').content.decode()
         self.assertIn('3. Time annotation', tabla)
         self.assertIn('_mw-time_', tabla)
+
+
+class DashboardTests(TestCase):
+    """El dashboard calcula el progreso por estado, campaña, tarea, severidad e indicador."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='dash-eval', password='x', is_staff=True, first_name='Ana')
+        self.client.force_login(self.user)
+        # Solo los videos de la prueba, no los de la carpeta uploads real
+        videos = [{'payment_id': 'testpay', 'worker_id': 'W-77', 'task_id': t, 'date': '2026-01-01',
+                   'filename': 'v.webm'} for t in ('t1', 't2')]
+        patcher = mock.patch('usabilityTest.evaluation_views.get_uploaded_videos', side_effect=lambda: list(videos))
+        self.videos = videos
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        SubjectProfile.objects.create(payment_id='testpay', age=30, gender='F', participated_before='no',
+                                      knowledge_on_usability='no', workerId='W-77', campId='camp-a')
+        done = Evaluacion.objects.create(video_id='v.webm', payment_id='testpay', task_id='t1', completada=True,
+                                         evaluador='dash-eval', tiempo_activo_segundos=120)
+        problema = CatalogoProblema.objects.create(descripcion='No encuentra el menú')
+        ProblemaIdentificado.objects.create(evaluacion=done, problema=problema, severidad='Critical', tipo='Navigation')
+        Anotacion.objects.create(evaluacion=done, start_time='00:01', indicador='PUZZ', contexto='Main task')
+
+    def test_dashboard_shows_charts_with_real_counts(self):
+        response = self.client.get('/admin-panel/')
+        self.assertEqual(response.status_code, 200)
+        ctx = response.context
+        self.assertEqual(ctx['progress_legend'][0]['value'], 1)       # completados
+        self.assertEqual(ctx['progress_legend'][2]['value'], 1)       # pendientes
+        self.assertEqual(ctx['progress_pct'], 50)
+        self.assertEqual([r['key'] for r in ctx['campaign_rows']], ['camp-a'])
+        self.assertEqual(sorted(r['key'] for r in ctx['task_rows']), ['t1', 't2'])
+        self.assertEqual(ctx['severity_legend'][0]['value'], 1)
+        self.assertEqual(ctx['top_indicators'][0]['code'], 'PUZZ')
+        self.assertEqual(ctx['avg_time'], '2m 00s')
+        self.assertContains(response, 'Campaign camp-a')
+        self.assertNotContains(response, 'Evaluate next video')
+        self.assertNotContains(response, 'Top evaluators')
+        self.assertNotContains(response, 'Quick Actions')
+
+    def test_dashboard_without_data(self):
+        self.videos.clear()
+        Evaluacion.objects.all().delete()
+        response = self.client.get('/admin-panel/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'No videos available')
+
+
+class CampaignsPageTests(TestCase):
+    """Las campañas se registran desde el enlace del participante y muestran su estado como los videos."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='camp-eval', password='x', is_staff=True)
+        self.client.force_login(self.user)
+        videos = [{'payment_id': pay, 'worker_id': pay, 'task_id': '1', 'date': '2026-01-01', 'filename': '_v.webm'}
+                  for pay in ('pay-a1', 'pay-a2', 'pay-b1', 'pay-sin-perfil')]
+        patcher = mock.patch('usabilityTest.evaluation_views.get_uploaded_videos', side_effect=lambda: list(videos))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        for pay, camp in (('pay-a1', 'camp-a'), ('pay-a2', 'camp-a'), ('pay-b1', 'camp-b')):
+            SubjectProfile.objects.create(payment_id=pay, age=30, gender='F', participated_before='no',
+                                          knowledge_on_usability='no', workerId=pay, campId=camp)
+            Test_Input.objects.get_or_create(campId=camp)
+        Test_Input.objects.create(campId='camp-c')
+        # Participante del enlace por defecto: no pertenece a ninguna campaña
+        SubjectProfile.objects.create(payment_id='pay-demo', age=30, gender='F', participated_before='no',
+                                      knowledge_on_usability='no', workerId='DEMO2', campId='demo')
+        Test_Input.objects.create(campId='demo')
+        Evaluacion.objects.create(video_id='v.webm', payment_id='pay-a1', task_id='1', completada=True)
+        Evaluacion.objects.create(video_id='v.webm', payment_id='pay-a2', task_id='1', completada=True)
+        Evaluacion.objects.create(video_id='v.webm', payment_id='pay-b1', task_id='1', completada=False)
+
+    def test_table_like_videos_without_evaluate(self):
+        response = self.client.get('/admin-panel/campanas/')
+        filas = [(f['camp_id'], f['worker_id']) for f in response.context['videos']]
+        # Los videos sin campaña (pay-sin-perfil) y los del enlace por defecto (DEMO2) no aparecen
+        self.assertEqual(filas, [('camp-a', 'pay-a1'), ('camp-a', 'pay-a2'), ('camp-b', 'pay-b1')])
+        self.assertNotContains(response, 'pay-sin-perfil')
+        self.assertNotContains(response, 'DEMO2')
+        self.assertNotContains(response, '/admin-panel/evaluar/')
+        self.assertContains(response, 'data-copy="camp-a"')
+        self.assertContains(response, 'data-copy="pay-a1"')
+        self.assertContains(response, 'data-copy="v"')  # nombre del archivo, como en la lista de Videos
+        self.assertContains(response, 'status-completada')
+        self.assertContains(response, 'status-progreso')
+
+    def test_filters_and_search(self):
+        response = self.client.get('/admin-panel/campanas/?filtro=en_progreso')
+        self.assertEqual([f['worker_id'] for f in response.context['videos']], ['pay-b1'])
+        response = self.client.get('/admin-panel/campanas/?filtro=completadas')
+        self.assertEqual([f['worker_id'] for f in response.context['videos']], ['pay-a1', 'pay-a2'])
+        response = self.client.get('/admin-panel/campanas/?q=CAMP-B')
+        self.assertEqual([f['worker_id'] for f in response.context['videos']], ['pay-b1'])
+        response = self.client.get('/admin-panel/campanas/?q=pay-a2')
+        self.assertEqual([f['worker_id'] for f in response.context['videos']], ['pay-a2'])
+
+    def test_view_videos_of_a_campaign(self):
+        response = self.client.get('/admin-panel/videos/?camp=camp-a')
+        self.assertEqual(sorted(v['payment_id'] for v in response.context['videos']), ['pay-a1', 'pay-a2'])
+
+    def test_participant_link_registers_the_campaign(self):
+        self.client.get('/index/?groupId=1&campId=nueva-campana&workerId=w1')
+        self.assertTrue(Test_Input.objects.filter(campId='nueva-campana').exists())
+
