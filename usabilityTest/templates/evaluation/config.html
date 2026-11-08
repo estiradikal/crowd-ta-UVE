@@ -1,29 +1,462 @@
 {% extends "evaluation/base_admin.html" %}
+{% load panel_i18n %}
 
-{% block title %}Settings - Admin Panel{% endblock %}
+{% block title %}{% t "Settings" %} - {% t "Admin Panel" %}{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="/static/css/settings_panel.css?v={{ asset_v }}">{% endblock %}
 
 {% block content %}
-<div class="dashboard">
-    <h2>Settings</h2>
-    <p class="text-muted">System configuration.</p>
+<div class="settings-page">
 
-    <div class="card mt-4">
-        <div class="card-body">
-            <h4>System Information</h4>
-            <table class="table">
-                <tr><td><strong>Django Version</strong></td><td>3.0.8</td></tr>
-                <tr><td><strong>Database</strong></td><td>SQLite</td></tr>
-                <tr><td><strong>Debug Mode</strong></td><td>Active</td></tr>
-            </table>
+    <!-- ===== Encabezado de perfil ===== -->
+    <header class="settings-hero">
+        <div class="hero-avatar">
+            <img id="heroAvatar" alt=""{% if profile.image_url %} src="{{ profile.image_url }}"{% else %} hidden{% endif %}>
+            <i class="fas fa-user" id="heroAvatarIcon"{% if profile.image_url %} hidden{% endif %}></i>
         </div>
-    </div>
+        <div class="hero-info">
+            <h2>{{ user.get_full_name|default:user.username }}</h2>
+            <div class="hero-meta">
+                <span class="hero-chip"><i class="fas fa-user-check"></i>
+                    {% if user.is_superuser %}{% t "Admin" %}{% else %}{% t profile.get_role_display %}{% endif %}</span>
+                <span><i class="fas fa-at"></i> {{ user.username }}</span>
+                {% if user.email %}<span><i class="fas fa-envelope"></i> {{ user.email }}</span>{% endif %}
+            </div>
+        </div>
+    </header>
 
-    <div class="card mt-4">
-        <div class="card-body">
-            <h4>Quick Links</h4>
-            <a href="/admin/" class="btn btn-outline-primary mr-2">Django Admin</a>
-            <a href="/admin-panel/videos/" class="btn btn-outline-primary">Video List</a>
+    <form method="post" enctype="multipart/form-data" id="settingsForm" class="settings-layout" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="tab" id="activeTab" value="{{ active_tab }}">
+
+        <!-- ===== Pestañas ===== -->
+        <nav class="settings-tabs" role="tablist" aria-label="{% t 'Settings' %}">
+            <button type="button" role="tab" data-tab="account" class="settings-tab">
+                <i class="fas fa-user-cog"></i>
+                <span><strong>{% t "My account" %}</strong><small>{% t "Photo, personal data and password" %}</small></span>
+            </button>
+            <button type="button" role="tab" data-tab="preferences" class="settings-tab">
+                <i class="fas fa-sliders-h"></i>
+                <span><strong>{% t "Preferences" %}</strong><small>{% t "Language, color and appearance" %}</small></span>
+            </button>
+            <button type="button" role="tab" data-tab="shortcuts" class="settings-tab">
+                <i class="fas fa-keyboard"></i>
+                <span><strong>{% t "Keyboard shortcuts" %}</strong><small>{% t "Keys for the Evaluate page" %}</small></span>
+            </button>
+        </nav>
+
+        <div class="settings-panels">
+
+            <!-- =================== MI CUENTA =================== -->
+            <section class="settings-panel" data-panel="account" role="tabpanel">
+                <div class="settings-card">
+                    <div class="settings-head">
+                        <h4><i class="fas fa-user-circle"></i> {% t "Profile picture" %}</h4>
+                        <p>{% t "Choose an avatar or upload your own photo." %}</p>
+                    </div>
+                    <div class="avatar-block">
+                        <div class="avatar-preview">
+                            <i class="fas fa-user avatar-placeholder"></i>
+                            <img id="avatarPreviewImg" alt=""{% if profile.image_url %} src="{{ profile.image_url }}"{% endif %}>
+                        </div>
+                        <div class="avatar-actions">
+                            <button type="button" class="btn-ghost" id="btnShuffle"><i class="fas fa-random"></i> {% t "Other avatars" %}</button>
+                            <label class="btn-ghost">
+                                <i class="fas fa-upload"></i> {% t "Upload photo" %}
+                                <input type="file" name="photo" id="photoInput" accept="image/*" hidden>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="avatar-grid" id="avatarGrid" role="radiogroup" aria-label="Avatar"></div>
+                    <input type="hidden" name="avatar_url" id="avatarUrl" value="{{ account_form.avatar_url.value|default:'' }}">
+                    {% for e in account_form.photo.errors %}<small class="form-error">{{ e }}</small>{% endfor %}
+                    {% for e in account_form.avatar_url.errors %}<small class="form-error">{{ e }}</small>{% endfor %}
+                </div>
+
+                <div class="settings-card">
+                    <div class="settings-head">
+                        <h4><i class="fas fa-id-card"></i> {% t "Personal information" %}</h4>
+                        <p>{% t "This is how other evaluators see you in the panel." %}</p>
+                    </div>
+                    <div class="settings-grid">
+                        <label class="s-field">
+                            <span>{% t "First name" %}</span>
+                            <input type="text" name="first_name" value="{{ account_form.first_name.value|default:'' }}">
+                            {% for e in account_form.first_name.errors %}<small class="form-error">{{ e }}</small>{% endfor %}
+                        </label>
+                        <label class="s-field">
+                            <span>{% t "Last name" %}</span>
+                            <input type="text" name="last_name" value="{{ account_form.last_name.value|default:'' }}">
+                            {% for e in account_form.last_name.errors %}<small class="form-error">{{ e }}</small>{% endfor %}
+                        </label>
+                        <label class="s-field s-span-2">
+                            <span>{% t "Email" %}</span>
+                            <div class="s-input-icon"><i class="fas fa-envelope"></i>
+                                <input type="email" name="email" value="{{ account_form.email.value|default:'' }}">
+                            </div>
+                            {% for e in account_form.email.errors %}<small class="form-error">{{ e }}</small>{% endfor %}
+                        </label>
+                        <div class="s-field">
+                            <span>{% t "Username" %}</span>
+                            <div class="s-readonly"><i class="fas fa-at"></i> {{ user.username }} <i class="fas fa-lock s-lock" title="{% t 'The username cannot be changed.' %}"></i></div>
+                        </div>
+                        <div class="s-field">
+                            <span>{% t "Role" %}</span>
+                            <div class="s-readonly"><i class="fas fa-user-check"></i>
+                                {% if user.is_superuser %}{% t "Admin" %}{% else %}{% t profile.get_role_display %}{% endif %}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="settings-head">
+                        <h4><i class="fas fa-key"></i> {% t "Change password" %}</h4>
+                        <p>{% t "Leave these fields empty if you don't want to change it." %}</p>
+                    </div>
+                    {% for e in password_form.non_field_errors %}<div class="s-alert">{{ e }}</div>{% endfor %}
+                    <div class="settings-grid">
+                        <label class="s-field s-span-2">
+                            <span>{% t "Current password" %}</span>
+                            <div class="s-input-icon s-pass"><i class="fas fa-lock"></i>
+                                <input type="password" name="old_password" autocomplete="current-password">
+                                <button type="button" class="s-eye" aria-label="Show"><i class="fas fa-eye"></i></button>
+                            </div>
+                            {% for e in password_form.old_password.errors %}<small class="form-error">{{ e }}</small>{% endfor %}
+                        </label>
+                        <label class="s-field">
+                            <span>{% t "New password" %}</span>
+                            <div class="s-input-icon s-pass"><i class="fas fa-key"></i>
+                                <input type="password" name="new_password1" id="newPassword" autocomplete="new-password">
+                                <button type="button" class="s-eye" aria-label="Show"><i class="fas fa-eye"></i></button>
+                            </div>
+                            <div class="strength" id="strength"><span></span><span></span><span></span><span></span></div>
+                            {% for e in password_form.new_password1.errors %}<small class="form-error">{{ e }}</small>{% endfor %}
+                        </label>
+                        <label class="s-field">
+                            <span>{% t "Confirm new password" %}</span>
+                            <div class="s-input-icon s-pass"><i class="fas fa-check-double"></i>
+                                <input type="password" name="new_password2" autocomplete="new-password">
+                                <button type="button" class="s-eye" aria-label="Show"><i class="fas fa-eye"></i></button>
+                            </div>
+                            {% for e in password_form.new_password2.errors %}<small class="form-error">{{ e }}</small>{% endfor %}
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =================== PREFERENCIAS =================== -->
+            <section class="settings-panel" data-panel="preferences" role="tabpanel">
+                <div class="settings-card">
+                    <div class="settings-head">
+                        <h4><i class="fas fa-language"></i> {% t "Language" %}</h4>
+                        <p>{% t "Choose the language of the panel." %}</p>
+                    </div>
+                    <div class="choice-grid">
+                        {% for code, name, flag in languages %}
+                        <label class="choice-tile">
+                            <input type="radio" name="language" value="{{ code }}" {% if preferences_form.language.value == code %}checked{% endif %}>
+                            <span class="choice-body"><span class="choice-flag">{{ flag }}</span> {{ name }}<i class="fas fa-check-circle choice-check"></i></span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="settings-head">
+                        <h4><i class="fas fa-palette"></i> {% t "Accent color" %}</h4>
+                        <p>{% t "Choose the main color of the panel." %}</p>
+                    </div>
+                    <div class="swatch-grid">
+                        {% for color in accent_colors %}
+                        <label class="swatch" title="{% t color.name %}">
+                            <input type="radio" name="accent_color" value="{{ color.key }}" data-style="{{ color.style }}"
+                                   {% if preferences_form.accent_color.value == color.key %}checked{% endif %}>
+                            <span class="swatch-dot" style="background: {{ color.light }}"><i class="fas fa-check"></i></span>
+                            <span class="swatch-name">{% t color.name %}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <div class="accent-preview" aria-hidden="true">
+                        <span class="ap-label">{% t "Preview" %}</span>
+                        <span class="btn btn-primary btn-sm">{% t "Evaluate" %}</span>
+                        <span class="btn btn-outline-primary btn-sm">{% t "View Reports" %}</span>
+                        <span class="ap-chip">{% t "In Progress" %}</span>
+                        <span class="ap-bar"><span></span></span>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="settings-head">
+                        <h4><i class="fas fa-adjust"></i> {% t "Appearance" %}</h4>
+                        <p>{% t "Applied right away and saved on this device." %}</p>
+                    </div>
+                    <div class="theme-grid">
+                        <label class="theme-tile">
+                            <input type="radio" name="theme_mode" value="light">
+                            <span class="theme-thumb thumb-light"><i></i><b></b><b></b></span>
+                            <span class="theme-name"><i class="fas fa-sun"></i> {% t "Light" %}</span>
+                        </label>
+                        <label class="theme-tile">
+                            <input type="radio" name="theme_mode" value="dark">
+                            <span class="theme-thumb thumb-dark"><i></i><b></b><b></b></span>
+                            <span class="theme-name"><i class="fas fa-moon"></i> {% t "Dark" %}</span>
+                        </label>
+                        <label class="theme-tile">
+                            <input type="radio" name="theme_mode" value="system">
+                            <span class="theme-thumb thumb-system"><i></i><b></b><b></b></span>
+                            <span class="theme-name"><i class="fas fa-desktop"></i> {% t "System" %}</span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =================== ATAJOS =================== -->
+            <section class="settings-panel" data-panel="shortcuts" role="tabpanel">
+                <div class="settings-card">
+                    <div class="settings-head with-toggle">
+                        <div>
+                            <h4><i class="fas fa-keyboard"></i> {% t "Keyboard shortcuts" %}</h4>
+                            <p>{% t "Work faster on the Evaluate page. Shortcuts are ignored while you type in a field." %}</p>
+                        </div>
+                        <label class="switch" title="{% t 'Enable keyboard shortcuts' %}">
+                            <input type="checkbox" name="shortcuts_enabled" id="shortcutsEnabled" {% if shortcuts_form.shortcuts_enabled.value %}checked{% endif %}>
+                            <span class="switch-track"><span class="switch-thumb"></span></span>
+                            <span class="switch-label">{% t "Enabled" %}</span>
+                        </label>
+                    </div>
+
+                    <ul class="shortcut-list" id="shortcutList">
+                        {% for row in shortcut_rows %}
+                        <li class="shortcut-row{% if row.errors %} has-error{% endif %}" data-action="{{ row.action }}" data-default="{{ row.default }}">
+                            <span class="sc-icon"><i class="fas {{ row.icon }}"></i></span>
+                            <span class="sc-text">
+                                <strong>{% t row.name %}</strong>
+                                <small>{% t row.help %}</small>
+                                {% for e in row.errors %}<small class="form-error">{% t e %}</small>{% endfor %}
+                            </span>
+                            <kbd class="sc-key">{{ row.label }}</kbd>
+                            <button type="button" class="btn-ghost sc-change"><i class="fas fa-pen"></i> <span>{% t "Change" %}</span></button>
+                            <input type="hidden" name="key_{{ row.action }}" value="{{ row.key }}">
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <p class="sc-status" id="scStatus" role="status" aria-live="polite"></p>
+                    <div class="settings-actions">
+                        <button type="button" class="btn-ghost" id="btnResetShortcuts"><i class="fas fa-undo"></i> {% t "Restore defaults" %}</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== Barra de guardado (guarda las tres pestañas) ===== -->
+            <div class="save-bar" id="saveBar">
+                <span class="save-state">
+                    <i class="fas fa-circle"></i>
+                    <span class="save-clean">{% t "Everything is saved" %}</span>
+                    <span class="save-dirty">{% t "You have unsaved changes" %}</span>
+                </span>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> {% t "Save changes" %}</button>
+            </div>
         </div>
-    </div>
+    </form>
 </div>
+{{ shortcut_key_labels|json_script:"shortcutKeyLabels" }}
+<script id="settingsStrings" type="application/json">{
+    "press": "{% t 'Press the new key… (Esc to cancel)' %}",
+    "used": "{% t 'That key is already used by' %}",
+    "changed": "{% t 'Key updated. Remember to save.' %}",
+    "reset": "{% t 'Default keys restored. Remember to save.' %}",
+    "change": "{% t 'Change' %}",
+    "cancel": "{% t 'Cancel' %}"
+}</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/avatar_picker.js?v={{ asset_v }}"></script>
+<script>
+(function () {
+    var root = document.documentElement;
+    var form = document.getElementById('settingsForm');
+    var S = JSON.parse(document.getElementById('settingsStrings').textContent);
+
+    // ---------- Cambios sin guardar ----------
+    var saveBar = document.getElementById('saveBar');
+    var submitting = false;
+    function markDirty() { saveBar.classList.add('dirty'); }
+    form.addEventListener('input', function (e) { if (e.target.name !== 'theme_mode') markDirty(); });
+    form.addEventListener('change', function (e) { if (e.target.name !== 'theme_mode') markDirty(); });
+    form.addEventListener('submit', function () { submitting = true; });
+    window.addEventListener('beforeunload', function (e) {
+        if (saveBar.classList.contains('dirty') && !submitting) { e.preventDefault(); e.returnValue = ''; }
+    });
+    {% if request.method == 'POST' %}markDirty();{% endif %}
+
+    // ---------- Pestañas ----------
+    var tabs = document.querySelectorAll('.settings-tab');
+    var panels = document.querySelectorAll('.settings-panel');
+    function showTab(name) {
+        tabs.forEach(function (t) {
+            var on = t.dataset.tab === name;
+            t.classList.toggle('active', on);
+            t.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        panels.forEach(function (p) { p.hidden = p.dataset.panel !== name; });
+        document.getElementById('activeTab').value = name;
+    }
+    tabs.forEach(function (t) {
+        t.addEventListener('click', function () {
+            showTab(t.dataset.tab);
+            history.replaceState(null, '', '?tab=' + t.dataset.tab);
+        });
+    });
+    showTab('{{ active_tab }}');
+
+    // ---------- Avatar ----------
+    var preview = document.getElementById('avatarPreviewImg');
+    var hero = document.getElementById('heroAvatar');
+    var heroIcon = document.getElementById('heroAvatarIcon');
+    var sidebarAvatar = document.querySelector('.sidebar-profile .profile-avatar');
+    preview.addEventListener('load', function () {
+        hero.src = preview.src;
+        hero.hidden = false;
+        heroIcon.hidden = true;
+        if (sidebarAvatar) sidebarAvatar.innerHTML = '<img src="' + preview.src + '" alt="">';
+    });
+    var avatarHidden = document.getElementById('avatarUrl');
+    initAvatarPicker({
+        grid: document.getElementById('avatarGrid'),
+        hidden: avatarHidden,
+        fileInput: document.getElementById('photoInput'),
+        preview: preview,
+        shuffle: document.getElementById('btnShuffle'),
+        keepCurrent: true,
+        onChange: markDirty
+    });
+
+    // ---------- Contraseña ----------
+    document.querySelectorAll('.s-eye').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var input = btn.parentElement.querySelector('input');
+            var show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.innerHTML = '<i class="fas fa-eye' + (show ? '-slash' : '') + '"></i>';
+        });
+    });
+    var strength = document.getElementById('strength');
+    document.getElementById('newPassword').addEventListener('input', function () {
+        var v = this.value, score = 0;
+        if (v.length >= 8) score++;
+        if (/[a-z]/.test(v) && /[A-Z]/.test(v)) score++;
+        if (/\d/.test(v)) score++;
+        if (/[^A-Za-z0-9]/.test(v) || v.length >= 14) score++;
+        strength.dataset.score = v ? score : 0;
+    });
+
+    // ---------- Color (vista previa inmediata, se guarda con "Guardar cambios") ----------
+    document.querySelectorAll('input[name="accent_color"]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            input.dataset.style.split(';').forEach(function (decl) {
+                var parts = decl.split(':');
+                if (parts.length === 2) root.style.setProperty(parts[0].trim(), parts[1].trim());
+            });
+        });
+    });
+
+    // ---------- Claro / oscuro / sistema (se aplica al instante en este dispositivo) ----------
+    var stored = null;
+    try { stored = localStorage.getItem('admin-theme'); } catch (e) {}
+    var current = stored === 'dark' || stored === 'light' ? stored : 'system';
+    document.querySelector('input[name="theme_mode"][value="' + current + '"]').checked = true;
+    document.querySelectorAll('input[name="theme_mode"]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            var mode = input.value;
+            try {
+                if (mode === 'system') localStorage.removeItem('admin-theme');
+                else localStorage.setItem('admin-theme', mode);
+            } catch (e) {}
+            var dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (dark) root.setAttribute('data-theme', 'dark'); else root.removeAttribute('data-theme');
+            var icon = document.querySelector('#btnTheme i');
+            if (icon) icon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
+        });
+    });
+
+    // ---------- Atajos ----------
+    var LABELS = JSON.parse(document.getElementById('shortcutKeyLabels').textContent);
+    var list = document.getElementById('shortcutList');
+    var status = document.getElementById('scStatus');
+    var recording = null;
+
+    function label(key) { return LABELS[key] || key.toUpperCase(); }
+    function rows() { return Array.prototype.slice.call(list.querySelectorAll('.shortcut-row')); }
+    function setStatus(text, kind) { status.textContent = text; status.className = 'sc-status' + (kind ? ' ' + kind : ''); }
+    function setKey(row, key) {
+        row.querySelector('input').value = key;
+        row.querySelector('.sc-key').textContent = label(key);
+        row.classList.remove('has-error');
+        markDirty();
+    }
+    function stopRecording() {
+        if (!recording) return;
+        recording.classList.remove('recording');
+        recording.querySelector('.sc-change span').textContent = S.change;
+        recording = null;
+    }
+
+    list.addEventListener('click', function (e) {
+        var btn = e.target.closest('.sc-change');
+        if (!btn) return;
+        var row = btn.closest('.shortcut-row');
+        if (recording === row) {
+            row.querySelector('.sc-key').textContent = label(row.querySelector('input').value);
+            stopRecording(); setStatus('');
+            return;
+        }
+        stopRecording();
+        recording = row;
+        row.classList.add('recording');
+        btn.querySelector('span').textContent = S.cancel;
+        row.querySelector('.sc-key').textContent = '…';
+        setStatus(S.press, 'info');
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (!recording) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var row = recording;
+        if (e.key === 'Escape') {
+            row.querySelector('.sc-key').textContent = label(row.querySelector('input').value);
+            stopRecording(); setStatus('');
+            return;
+        }
+        if (['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'CapsLock'].indexOf(e.key) !== -1) return;
+        var key = e.key.toLowerCase();
+        if (e.key.length !== 1 && !LABELS[key]) return;  // tecla no permitida (F1, Enter…)
+        var other = rows().find(function (r) { return r !== row && r.querySelector('input').value === key; });
+        if (other) {
+            setStatus(S.used + ' "' + other.querySelector('.sc-text strong').textContent + '".', 'error');
+            row.classList.add('shake');
+            setTimeout(function () { row.classList.remove('shake'); }, 400);
+            return;
+        }
+        setKey(row, key);
+        stopRecording();
+        row.classList.add('just-set');
+        setTimeout(function () { row.classList.remove('just-set'); }, 900);
+        setStatus(S.changed, 'ok');
+    }, true);
+
+    document.getElementById('btnResetShortcuts').addEventListener('click', function () {
+        stopRecording();
+        rows().forEach(function (row) { setKey(row, row.dataset.default); });
+        setStatus(S.reset, 'ok');
+    });
+
+    var enabled = document.getElementById('shortcutsEnabled');
+    function syncEnabled() { list.classList.toggle('disabled', !enabled.checked); }
+    enabled.addEventListener('change', syncEnabled);
+    syncEnabled();
+})();
+</script>
 {% endblock %}

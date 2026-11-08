@@ -1,6 +1,6 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from . import evaluation_views
+from . import evaluation_views, evaluator_auth_views
 
 urlpatterns = [
     # Admin Panel
@@ -16,7 +16,9 @@ urlpatterns = [
     path('admin-panel/tabla-anotaciones/', evaluation_views.tabla_anotaciones, name='admin_tabla_anotaciones'),
     path('admin-panel/guia/', evaluation_views.guia_evaluacion, name='admin_guia'),
     path('admin-panel/config/', evaluation_views.config_panel, name='admin_config'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='/index/'), name='logout'),
+    path('admin-panel/login/', evaluator_auth_views.panel_login, name='panel_login'),
+    path('admin-panel/signup/', evaluator_auth_views.panel_signup, name='panel_signup'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='/admin-panel/login/'), name='logout'),
     # API
     path('admin-panel/api/<int:evaluacion_id>/datos/', evaluation_views.api_cargar_datos, name='api_cargar_datos'),
     path('admin-panel/api/<int:evaluacion_id>/anotacion/', evaluation_views.api_agregar_anotacion, name='api_agregar_anotacion'),

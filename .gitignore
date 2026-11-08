@@ -137,3 +137,5 @@ Source_Code/usabilityTest/uploads/
 staticfiles/
 db_respaldo.sqlite3
 *.sqlite3-journal
+# Fotos de perfil de evaluadores
+media/

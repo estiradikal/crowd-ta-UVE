@@ -33,7 +33,26 @@
     .key-hint { margin-left: 4px; vertical-align: 1px; }
     @keyframes marked { from { background-color: #fff3a3; } to { background-color: transparent; } }
     .just-marked { animation: marked 0.9s ease-out; }
-    .annotations-table { max-height: 300px; overflow-y: auto; }
+    @keyframes marked-dark { from { background-color: #854d0e; } to { background-color: transparent; } }
+    [data-theme="dark"] .just-marked { animation-name: marked-dark; }
+    .annotations-table { max-height: 300px; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+    .annotations-table::-webkit-scrollbar { width: 8px; height: 8px; }
+    .annotations-table::-webkit-scrollbar-track { background: transparent; }
+    .annotations-table::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+    .annotations-table::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    /* Encabezado fijo y columna de acciones siempre visible al desplazar la tabla */
+    /* .table .thead-light th de Bootstrap pone fondo claro fijo; esta regla le gana en ambos modos */
+    .annotations-table .table thead th { position: sticky; top: 0; z-index: 2; background: var(--surface-2); color: var(--text); border-color: var(--border); }
+    .annotations-table td.actions-cell,
+    .annotations-table th:last-child {
+        position: sticky; right: 0; z-index: 1; white-space: nowrap;
+        background: var(--surface); box-shadow: -6px 0 8px -6px rgba(15, 23, 42, .25);
+    }
+    .annotations-table .table thead th:last-child { z-index: 3; background: var(--surface-2); }
+    .annotations-table .table-hover tbody tr:hover td.actions-cell { background: var(--surface-2); }
+    .annotations-table .td-truncate { max-width: 220px; }
+    .jump-to-time { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .jump-to-time:hover { color: var(--accent); text-decoration: underline; }
 
     /* ---- Resizable split layout ---- */
     .eval-split { display: flex; align-items: stretch; --side-w: 420px; }
@@ -96,20 +115,20 @@
     .cb-menu {
         position: absolute; z-index: 1050; top: calc(100% + 2px); left: 0; right: 0;
         max-height: 220px; overflow-y: auto;
-        background: var(--surface, #fff); border: 1px solid #ced4da; border-radius: 4px;
+        background: var(--surface, #fff); border: 1px solid var(--border, #ced4da); border-radius: 4px;
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
     }
     .cb-item { padding: 0.45rem 0.75rem; cursor: pointer; font-size: 0.92rem; color: var(--text, #212529); }
     .cb-item:hover, .cb-item.active { background: #e9ecef; }
     .cb-empty { padding: 0.45rem 0.75rem; color: var(--text-muted, #6c757d); font-size: 0.9rem; }
-    .cb-create { color: #007bff; font-weight: 600; border-top: 1px solid #e9ecef; }
+    .cb-create { color: var(--accent, #2563eb); font-weight: 600; border-top: 1px solid var(--border, #e9ecef); }
     .cb-create i { margin-right: 6px; }
-    .cb-create:hover, .cb-create.active { background: #e7f1ff; color: #0056b3; }
+    .cb-create:hover, .cb-create.active { background: var(--accent-soft, #e7f1ff); color: var(--accent, #0056b3); }
     .td-truncate { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    [data-theme="dark"] .cb-menu { background: var(--surface); border-color: #3a414f; }
+    [data-theme="dark"] .cb-menu { background: var(--surface); border-color: var(--border); }
     [data-theme="dark"] .cb-item:hover, [data-theme="dark"] .cb-item.active { background: var(--surface-2); }
-    [data-theme="dark"] .cb-create { color: #60a5fa; border-top-color: var(--surface-2); }
-    [data-theme="dark"] .cb-create:hover, [data-theme="dark"] .cb-create.active { background: #1e3a5f; color: #93c5fd; }
+    [data-theme="dark"] .cb-create { color: var(--accent); border-top-color: var(--surface-2); }
+    [data-theme="dark"] .cb-create:hover, [data-theme="dark"] .cb-create.active { background: var(--accent-soft); color: var(--accent); }
 </style>
 {% endblock %}
 
@@ -283,17 +302,17 @@
                 <form id="annotationForm">
                     <div class="form-row">
                         <div class="form-group col-6">
-                            <label for="formStartTime">Start Time <kbd class="key-hint" title="Press S to mark the start">S</kbd></label>
+                            <label for="formStartTime">Start Time <kbd class="key-hint">{{ panel_shortcut_labels.mark_start }}</kbd></label>
                             <input type="text" class="form-control" id="formStartTime" readonly value="00:00">
                         </div>
                         <div class="form-group col-6">
-                            <label for="formEndTime">End Time <kbd class="key-hint" title="Press E to mark the end">E</kbd></label>
+                            <label for="formEndTime">End Time <kbd class="key-hint">{{ panel_shortcut_labels.mark_end }}</kbd></label>
                             <input type="text" class="form-control" id="formEndTime" readonly value="00:00">
                         </div>
                     </div>
                     <p class="mark-hint text-muted">
-                        Press <kbd>S</kbd> / <kbd>E</kbd> to mark start / end at the current video time,
-                        <kbd>Space</kbd> to play or pause.
+                        Press <kbd>{{ panel_shortcut_labels.mark_start }}</kbd> / <kbd>{{ panel_shortcut_labels.mark_end }}</kbd> to mark start / end at the current video time,
+                        <kbd>{{ panel_shortcut_labels.play_pause }}</kbd> to play or pause, <kbd>{{ panel_shortcut_labels.rewind }}</kbd> / <kbd>{{ panel_shortcut_labels.forward }}</kbd> to move 5 s.
                         <a href="#" class="help-link" data-open-guide="shortcuts" title="Guide: keyboard shortcuts" aria-label="Open guide: keyboard shortcuts"><i class="fas fa-question-circle"></i></a>
                     </p>
                     <div class="form-group">
@@ -899,18 +918,24 @@
         flash(formEndTime);
     }
 
-    // Keyboard shortcuts: S = mark start, E = mark end, Space = play/pause.
+    // Keyboard shortcuts (configurable in Settings > Keyboard shortcuts).
     // Ignored while typing in a field or with a modal open.
     document.addEventListener('keydown', function(e) {
+        if (!window.PANEL_SHORTCUTS_ENABLED) return;
         if (e.ctrlKey || e.metaKey || e.altKey) return;
         var el = document.activeElement;
         var typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
         if (typing || document.querySelector('.modal.show')) return;
         if (!document.getElementById('evaluate').classList.contains('active')) return;
-        var key = e.key.toLowerCase();
-        if (key === 's') { e.preventDefault(); markStart(); }
-        else if (key === 'e') { e.preventDefault(); markEnd(); }
-        else if (key === ' ' && el !== video && !(el && el.tagName === 'BUTTON')) {
+        var key = panelShortcutKey(e), sc = PANEL_SHORTCUTS;
+        if (key === sc.mark_start) { e.preventDefault(); markStart(); }
+        else if (key === sc.mark_end) { e.preventDefault(); markEnd(); }
+        else if (key === sc.rewind) { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 5); }
+        else if (key === sc.forward) {
+            e.preventDefault();
+            video.currentTime = Math.min(video.duration || video.currentTime + 5, video.currentTime + 5);
+        }
+        else if (key === sc.play_pause && !(key === ' ' && (el === video || (el && el.tagName === 'BUTTON')))) {
             e.preventDefault();
             if (video.paused) video.play(); else video.pause();
         }

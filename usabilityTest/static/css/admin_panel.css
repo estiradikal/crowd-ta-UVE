@@ -138,6 +138,14 @@ body {
     justify-content: center;
     font-size: 0.8rem;
     flex-shrink: 0;
+    overflow: hidden;
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #ffffff;
 }
 
 .profile-info {
@@ -701,10 +709,6 @@ body.sidebar-resizing video {
    UTILITY CLASSES
    ======================================== */
 
-.text-warning { color: #000000 !important; }
-.text-success { color: #000000 !important; }
-.text-info { color: #000000 !important; }
-.text-danger { color: #000000 !important; }
 
 /* ========================================
    SHEET TABS (Annotation table / Problem table / Summary)
@@ -1190,3 +1194,212 @@ a.stat.active {
     font-size: 0.85em;
 }
 .help-link:hover { color: var(--accent); }
+
+/* =========================================================
+   Color de acento elegido en Configuración
+   (base_admin.html define --accent-light y --accent-dark)
+   ========================================================= */
+:root {
+    --accent: var(--accent-light, #2563eb);
+    --accent-solid: var(--accent-light, #2563eb);
+    --accent-soft: var(--accent-soft-light, #eff6ff);
+    --accent-tint: var(--accent-tint-light, #f6f9ff);
+    --bg: var(--accent-bg-light, #f5f6fa);
+}
+[data-theme="dark"] {
+    --accent: var(--accent-dark, #60a5fa);
+    --accent-soft: var(--accent-soft-dark, #1e3a8a);
+    --accent-tint: var(--accent-tint-dark, #1e293b);
+    --bg: var(--accent-bg-dark, #0f172a);
+}
+
+/* El color elegido se nota en todo el panel */
+.admin-sidebar {
+    background-image: linear-gradient(180deg, var(--accent-tint) 0, var(--surface) 260px);
+    border-top: 3px solid var(--accent-solid);
+}
+.nav-item.active,
+.nav-item.active:hover {
+    background-color: var(--accent-solid);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb, 37, 99, 235), .28);
+}
+.nav-item.active i,
+.nav-item.active:hover i { color: #ffffff; }
+.admin-main > * > h2:first-child { position: relative; padding-bottom: 8px; }
+.admin-main > * > h2:first-child::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 42px;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--accent-solid);
+}
+.card-header i, .stat:not([class*="tone-"]) .stat-dot { color: var(--accent); }
+.stat:not([class*="tone-"]) { --stat-tone: var(--accent-solid); }
+
+.profile-avatar { background: var(--accent-solid); }
+
+.btn-primary,
+.btn-primary:disabled,
+.badge-primary,
+.bg-primary {
+    background-color: var(--accent-solid) !important;
+    border-color: var(--accent-solid) !important;
+    color: #ffffff;
+}
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:not(:disabled):active {
+    background-color: var(--accent-solid) !important;
+    border-color: var(--accent-solid) !important;
+    filter: brightness(0.9);
+}
+.btn-outline-primary { color: var(--accent); border-color: var(--accent); }
+.btn-outline-primary:hover { background-color: var(--accent-solid); border-color: var(--accent-solid); color: #ffffff; }
+.text-primary, [data-theme="dark"] .text-primary { color: var(--accent) !important; }
+.form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 0.2rem var(--accent-soft); }
+a:not([class]), a:not([class]):hover { color: var(--accent); }
+
+/* =========================================================
+   MODO OSCURO COMPLETO
+   Cubre los componentes de Bootstrap y las piezas de cada página
+   que antes quedaban con colores de modo claro.
+   ========================================================= */
+:root { color-scheme: light; }
+[data-theme="dark"] { color-scheme: dark; }  /* barras de scroll, selects y calendarios nativos */
+
+body, .card, .settings-card, .admin-sidebar, .table, .form-control, .modal-content,
+.nav-tabs .nav-link, .badge, .btn, .stat, .shortcut-row, .choice-body {
+    transition: background-color .25s ease, color .25s ease, border-color .25s ease;
+}
+
+/* --- Texto general --- */
+[data-theme="dark"] .admin-main h1, [data-theme="dark"] .admin-main h2, [data-theme="dark"] .admin-main h3,
+[data-theme="dark"] .admin-main h4, [data-theme="dark"] .admin-main h5, [data-theme="dark"] .admin-main h6,
+[data-theme="dark"] .modal h5,
+[data-theme="dark"] .admin-main label,
+[data-theme="dark"] .modal label,
+[data-theme="dark"] .text-dark,
+[data-theme="dark"] .text-body { color: var(--text); }
+[data-theme="dark"] .text-secondary { color: var(--text-muted) !important; }
+[data-theme="dark"] .form-check-label { color: var(--text); }
+
+/* Colores de texto semánticos: en modo claro con buen contraste (antes estaban en negro) */
+.text-warning { color: #b45309 !important; }
+.text-success { color: #15803d !important; }
+.text-info { color: #0369a1 !important; }
+.text-danger { color: #dc2626 !important; }
+[data-theme="dark"] .text-warning { color: #fbbf24 !important; }
+[data-theme="dark"] .text-success { color: #34d399 !important; }
+[data-theme="dark"] .text-info { color: #38bdf8 !important; }
+[data-theme="dark"] .text-danger { color: #f87171 !important; }
+
+/* --- Tablas --- */
+[data-theme="dark"] .table { background-color: transparent; }
+[data-theme="dark"] .thead-light th,
+[data-theme="dark"] .table .thead-light th {
+    background-color: var(--surface-2);
+    color: var(--text);
+    border-color: var(--border);
+}
+[data-theme="dark"] .admin-table-wrap thead .actions-col { background: var(--surface-2); }
+[data-theme="dark"] .table-active,
+[data-theme="dark"] .table-active > td,
+[data-theme="dark"] .table-active > th { background-color: var(--surface-2); color: var(--text); }
+
+/* --- Pestañas (página de evaluación) --- */
+[data-theme="dark"] .nav-tabs { border-bottom-color: var(--border); }
+[data-theme="dark"] .nav-tabs .nav-link { color: var(--text-muted); }
+[data-theme="dark"] .nav-tabs .nav-link:hover { border-color: var(--border) var(--border) transparent; color: var(--text); }
+[data-theme="dark"] .nav-tabs .nav-link.active,
+[data-theme="dark"] .nav-tabs .nav-item.show .nav-link {
+    background-color: var(--surface);
+    border-color: var(--border) var(--border) var(--surface);
+    color: var(--accent);
+}
+.nav-tabs .nav-link.active { color: var(--accent); font-weight: 600; }
+
+/* --- Modales --- */
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer { border-color: var(--border); }
+[data-theme="dark"] .modal-title { color: var(--text); }
+[data-theme="dark"] .close { color: var(--text); text-shadow: none; opacity: .7; }
+[data-theme="dark"] .close:hover { color: var(--text); opacity: 1; }
+[data-theme="dark"] .modal-header.bg-danger .modal-title,
+[data-theme="dark"] .modal-header.bg-danger .close,
+[data-theme="dark"] .close.text-white { color: #ffffff; }
+[data-theme="dark"] .modal-backdrop.show { opacity: .7; }
+
+/* --- Formularios --- */
+[data-theme="dark"] select.form-control option { background-color: var(--surface); color: var(--text); }
+[data-theme="dark"] .form-control[readonly] { background-color: var(--surface-2); color: var(--text); }
+[data-theme="dark"] .input-group-text {
+    background-color: var(--surface-2);
+    color: var(--text);
+    border-color: var(--border);
+}
+.form-check-input { accent-color: var(--accent-solid); }
+[data-theme="dark"] .form-check-input { accent-color: var(--accent); }
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder { color: var(--text-muted); opacity: 1; }
+
+/* --- Botones --- */
+[data-theme="dark"] .btn-secondary {
+    background-color: var(--surface-2);
+    border-color: var(--border);
+    color: var(--text);
+}
+[data-theme="dark"] .btn-secondary:hover { background-color: var(--border); color: var(--text); }
+.btn-outline-secondary.active,
+.btn-outline-secondary:not(:disabled):not(.disabled):active {
+    background-color: var(--accent-solid);
+    border-color: var(--accent-solid);
+    color: #ffffff;
+}
+[data-theme="dark"] .btn-outline-secondary.active,
+[data-theme="dark"] .btn-outline-secondary:not(:disabled):not(.disabled):active {
+    background-color: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+[data-theme="dark"] .btn-outline-primary:hover { color: #ffffff; }
+[data-theme="dark"] .btn-success { background-color: #15803d; border-color: #15803d; }
+[data-theme="dark"] .btn-danger { background-color: #b91c1c; border-color: #b91c1c; }
+
+/* --- Etiquetas (badges) --- */
+[data-theme="dark"] .badge-success { background-color: #065f46; color: #a7f3d0; }
+[data-theme="dark"] .badge-warning { background-color: #78350f; color: #fde68a; }
+[data-theme="dark"] .badge-info { background-color: #0c4a6e; color: #bae6fd; }
+[data-theme="dark"] .badge-danger { background-color: #7f1d1d; color: #fecaca; }
+[data-theme="dark"] .badge-secondary { background-color: #334155; color: #e2e8f0; }
+[data-theme="dark"] .badge-light { background-color: var(--surface-2); color: var(--text); }
+
+/* --- Avisos --- */
+[data-theme="dark"] .alert-secondary,
+[data-theme="dark"] .alert-light { background-color: var(--surface-2); color: var(--text); border-color: var(--border); }
+[data-theme="dark"] .alert .close { color: inherit; }
+
+/* --- Código y teclas --- */
+[data-theme="dark"] code { color: #f9a8d4; }
+[data-theme="dark"] kbd { background-color: #e2e8f0; color: #0f172a; }
+[data-theme="dark"] pre { background-color: var(--surface-2); color: var(--text); }
+
+/* --- Página de evaluación: lista de anotaciones y buscador de problemas --- */
+[data-theme="dark"] .annotation-row:hover { background-color: var(--surface-2); }
+[data-theme="dark"] .cb-item:hover,
+[data-theme="dark"] .cb-item.active { background: var(--surface-2); }
+[data-theme="dark"] .cb-menu { box-shadow: 0 6px 16px rgba(0, 0, 0, .45); }
+.cb-create { color: var(--accent); }
+.cb-create:hover, .cb-create.active { background: var(--accent-soft); color: var(--accent); }
+[data-theme="dark"] .cb-create { color: var(--accent); }
+[data-theme="dark"] .cb-create:hover,
+[data-theme="dark"] .cb-create.active { background: var(--accent-soft); color: var(--accent); }
+
+/* --- Barras de desplazamiento --- */
+[data-theme="dark"] ::-webkit-scrollbar { width: 10px; height: 10px; }
+[data-theme="dark"] ::-webkit-scrollbar-track { background: var(--bg); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; border: 2px solid var(--bg); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #475569; }

@@ -322,3 +322,31 @@ class AudioMonitoringSession(models.Model):
 
     def __str__(self):
         return f"{self.subject_id} - Task {self.task_id} - {self.session_id}"
+
+
+class EvaluatorProfile(models.Model):
+    """Datos extra del evaluador registrado desde el login del panel."""
+
+    ROLE_EVALUATOR = "evaluator"
+    ROLE_CHOICES = ((ROLE_EVALUATOR, "Evaluator"),)
+
+    user = models.OneToOneField("auth.User", on_delete=models.CASCADE, related_name="evaluator_profile")
+    role = models.CharField(max_length=32, choices=ROLE_CHOICES, default=ROLE_EVALUATOR)
+    photo = models.ImageField(upload_to="avatars/", null=True, blank=True)
+    avatar_url = models.URLField(max_length=300, blank=True, default="")
+    # Preferencias del panel (ver panel_preferences.py)
+    language = models.CharField(max_length=8, default="en")
+    accent_color = models.CharField(max_length=16, default="blue")
+    # Atajos de teclado personalizados: {acción: tecla}; lo que falte usa el valor por defecto
+    shortcuts = models.JSONField(default=dict, blank=True)
+    shortcuts_enabled = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} ({self.get_role_display()})"
+
+    @property
+    def image_url(self):
+        if self.photo:
+            return self.photo.url
+        return self.avatar_url

@@ -2,15 +2,24 @@ import os
 import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import FileResponse, Http404, JsonResponse
-from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.admin.views.decorators import staff_member_required as _staff_member_required
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 from django.db import IntegrityError
 from django.db.models import F, Q
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from .models import (Evaluacion, Anotacion, ProblemaIdentificado, CatalogoProblema, SubjectProfile, Test_Input,
-                     parse_mmss)
-from .forms import Test_InputForm
+                     EvaluatorProfile, parse_mmss)
+from .forms import AccountForm, PreferencesForm, ShortcutsForm, Test_InputForm
+from .panel_preferences import (ACCENT_COLORS, LANGUAGES, NAMED_KEYS, SHORTCUT_ACTIONS, accent_palette, accent_style,
+                                resolve_shortcuts, shortcut_label, translate)
+
+
+def staff_member_required(view_func):
+    # Sin sesión, el panel manda al login propio en vez de al de /admin/
+    return _staff_member_required(view_func, login_url='panel_login')
 
 
 @staff_member_required
@@ -289,13 +298,91 @@ def guia_evaluacion(request):
     return render(request, 'evaluation/guia.html', context)
 
 
+SETTINGS_TABS = ('account', 'preferences', 'shortcuts')
+PASSWORD_FIELDS = ('old_password', 'new_password1', 'new_password2')
+
+
 @staff_member_required
 def config_panel(request):
-    context = {
-        'active_page': 'config',
-        'stats': get_stats(),
-    }
-    return render(request, 'evaluation/config.html', context)
+    """Configuración: un solo formulario guarda cuenta, preferencias y atajos a la vez."""
+    profile, _ = EvaluatorProfile.objects.get_or_create(user=request.user)
+    shortcut_initial = {'key_' + a: k for a, k in resolve_shortcuts(profile).items()}
+    shortcut_initial['shortcuts_enabled'] = profile.shortcuts_enabled
+
+    with translation.override(profile.language):
+        if request.method == 'POST':
+            account_form = AccountForm(request.POST, request.FILES, instance=request.user)
+            preferences_form = PreferencesForm(request.POST)
+            shortcuts_form = ShortcutsForm(request.POST)
+            # La contraseña solo se valida si el usuario escribió algo en esos campos
+            wants_password = any(request.POST.get(f) for f in PASSWORD_FIELDS)
+            password_form = (PasswordChangeForm(request.user, request.POST) if wants_password
+                             else PasswordChangeForm(request.user))
+
+            forms_ok = {
+                'account': account_form.is_valid() and (not wants_password or password_form.is_valid()),
+                'preferences': preferences_form.is_valid(),
+                'shortcuts': shortcuts_form.is_valid(),
+            }
+            if all(forms_ok.values()):
+                account_form.save()
+                photo = account_form.cleaned_data.get('photo')
+                avatar_url = account_form.cleaned_data.get('avatar_url')
+                if photo:
+                    profile.photo, profile.avatar_url = photo, ''
+                elif avatar_url and avatar_url != profile.avatar_url:
+                    profile.photo, profile.avatar_url = None, avatar_url
+                profile.language = preferences_form.cleaned_data['language']
+                profile.accent_color = preferences_form.cleaned_data['accent_color']
+                profile.shortcuts = shortcuts_form.shortcut_keys()
+                profile.shortcuts_enabled = shortcuts_form.cleaned_data['shortcuts_enabled']
+                profile.save()
+                if wants_password:
+                    password_form.save()
+                    update_session_auth_hash(request, password_form.user)  # no cerrar la sesión actual
+                messages.success(request, translate('Settings saved.', profile.language))
+                tab = request.POST.get('tab')
+                return redirect('/admin-panel/config/?tab=' + (tab if tab in SETTINGS_TABS else 'account'))
+            # Abrir la primera pestaña que tenga errores
+            active_tab = next(t for t in SETTINGS_TABS if not forms_ok[t])
+        else:
+            account_form = AccountForm(instance=request.user, initial={
+                'avatar_url': '' if profile.photo else profile.avatar_url,
+            })
+            password_form = PasswordChangeForm(request.user)
+            preferences_form = PreferencesForm(initial={
+                'language': profile.language,
+                'accent_color': profile.accent_color,
+            })
+            shortcuts_form = ShortcutsForm(initial=shortcut_initial)
+            active_tab = request.GET.get('tab')
+            active_tab = active_tab if active_tab in SETTINGS_TABS else 'account'
+
+        context = {
+            'active_page': 'config',
+            'active_tab': active_tab,
+            'profile': profile,
+            'account_form': account_form,
+            'password_form': password_form,
+            'preferences_form': preferences_form,
+            'shortcuts_form': shortcuts_form,
+            'shortcut_rows': [
+                {'action': action, 'name': name, 'help': help_text, 'icon': icon,
+                 'key': shortcuts_form['key_' + action].value(),
+                 'label': shortcut_label(shortcuts_form['key_' + action].value() or default),
+                 'default': default, 'errors': shortcuts_form['key_' + action].errors}
+                for action, name, help_text, default, icon in SHORTCUT_ACTIONS
+            ],
+            'shortcut_key_labels': NAMED_KEYS,
+            'languages': LANGUAGES,
+            'accent_colors': [
+                {'key': key, 'name': name, 'light': light, 'style': accent_style(accent_palette(light, dark))}
+                for key, name, light, dark in ACCENT_COLORS
+            ],
+            'stats': get_stats(),
+        }
+        return render(request, 'evaluation/config.html', context,
+                      status=400 if request.method == 'POST' else 200)
 
 
 @staff_member_required
