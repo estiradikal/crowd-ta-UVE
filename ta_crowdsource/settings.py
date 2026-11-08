@@ -77,6 +77,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'usabilityTest.panel_preferences.panel_preferences',
             ],
         },
     },
@@ -155,5 +156,11 @@ TEMPLATE_DIRS = (
 CORS_ALLOW_ALL_ORIGINS = True   # Solo para desarrollo
 CORS_ALLOW_CREDENTIALS = True
 
-# Login URL for @staff_member_required decorator
-LOGIN_URL = '/admin/login/'
+# Login del panel de evaluación (login + registro de evaluadores)
+LOGIN_URL = '/admin-panel/login/'
+LOGIN_REDIRECT_URL = '/admin-panel/'
+LOGOUT_REDIRECT_URL = '/admin-panel/login/'
+
+# Fotos de perfil subidas por los evaluadores
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

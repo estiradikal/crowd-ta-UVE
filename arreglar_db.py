@@ -61,4 +61,4 @@ for query in sql_queries:
 conn.commit()
 conn.close()
 
-print("✅ Tablas creadas exitosamente.")
+print("Tablas creadas exitosamente.")

@@ -1,25 +1,26 @@
 {% extends "evaluation/base_admin.html" %}
+{% load panel_i18n %}
 
-{% block title %}Video List - Admin Panel{% endblock %}
+{% block title %}{% t "Video List" %} - {% t "Admin Panel" %}{% endblock %}
 
 {% block content %}
 <div class="videos-list">
-    <h2>Video List</h2>
+    <h2>{% t "Video List" %}</h2>
     
     <div class="row mb-3">
         <div class="col-md-6">
             <div class="btn-group">
-                <a href="?filtro=todos" class="btn btn-outline-secondary {% if filtro == 'todos' %}active{% endif %}">All</a>
-                <a href="?filtro=pendientes" class="btn btn-outline-secondary {% if filtro == 'pendientes' %}active{% endif %}">Pending</a>
-                <a href="?filtro=en_progreso" class="btn btn-outline-secondary {% if filtro == 'en_progreso' %}active{% endif %}">In Progress</a>
-                <a href="?filtro=completadas" class="btn btn-outline-secondary {% if filtro == 'completadas' %}active{% endif %}">Completed</a>
+                <a href="?filtro=todos" class="btn btn-outline-secondary {% if filtro == 'todos' %}active{% endif %}">{% t "All" %}</a>
+                <a href="?filtro=pendientes" class="btn btn-outline-secondary {% if filtro == 'pendientes' %}active{% endif %}">{% t "Pending" %}</a>
+                <a href="?filtro=en_progreso" class="btn btn-outline-secondary {% if filtro == 'en_progreso' %}active{% endif %}">{% t "In Progress" %}</a>
+                <a href="?filtro=completadas" class="btn btn-outline-secondary {% if filtro == 'completadas' %}active{% endif %}">{% t "Completed" %}</a>
             </div>
         </div>
         <div class="col-md-6">
             <form class="form-inline justify-content-end">
-                <input type="text" name="q" class="form-control mr-2" placeholder="Search by Worker ID..." value="{{ busqueda }}">
+                <input type="text" name="q" class="form-control mr-2" placeholder="{% t 'Search by Worker ID...' %}" value="{{ busqueda }}">
                 <input type="hidden" name="filtro" value="{{ filtro }}">
-                <button type="submit" class="btn btn-primary">Search</button>
+                <button type="submit" class="btn btn-primary">{% t "Search" %}</button>
             </form>
         </div>
     </div>
@@ -28,12 +29,12 @@
     <table class="table table-striped table-hover">
         <thead class="thead-dark">
             <tr>
-                <th>Worker ID</th>
-                <th>Task ID</th>
-                <th>Date</th>
-                <th>File</th>
-                <th>Status</th>
-                <th class="actions-col">Actions</th>
+                <th>{% t "Worker ID" %}</th>
+                <th>{% t "Task ID" %}</th>
+                <th>{% t "Date" %}</th>
+                <th>{% t "File" %}</th>
+                <th>{% t "Status" %}</th>
+                <th class="actions-col">{% t "Actions" %}</th>
             </tr>
         </thead>
         <tbody>
@@ -41,30 +42,30 @@
             <tr>
                 <td>
                     {{ video.worker_id }}
-                    <button class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="Copy" aria-label="Copy" onclick="navigator.clipboard.writeText('{{ video.worker_id }}')"><i class="fas fa-copy" aria-hidden="true"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" onclick="navigator.clipboard.writeText('{{ video.worker_id }}')"><i class="fas fa-copy" aria-hidden="true"></i></button>
                 </td>
                 <td>{{ video.task_id }}</td>
                 <td>{{ video.date }}</td>
                 <td>
                     <span class="file-name" title="{{ video.filename|slice:"1:-5" }}">{{ video.filename|slice:"1:-5" }}</span>
-                    <button class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="Copy" aria-label="Copy" onclick='navigator.clipboard.writeText("{{ video.filename|slice:"1:-5" }}")'><i class="fas fa-copy" aria-hidden="true"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" onclick='navigator.clipboard.writeText("{{ video.filename|slice:"1:-5" }}")'><i class="fas fa-copy" aria-hidden="true"></i></button>
                 </td>
                 <td>
                     {% if video.evaluada %}
-                        <span class="status-badge status-completada">Completed</span>
+                        <span class="status-badge status-completada">{% t "Completed" %}</span>
                     {% elif video.en_progreso %}
-                        <span class="status-badge status-progreso">In Progress</span>
+                        <span class="status-badge status-progreso">{% t "In Progress" %}</span>
                     {% else %}
-                        <span class="status-badge status-pendiente">Pending</span>
+                        <span class="status-badge status-pendiente">{% t "Pending" %}</span>
                     {% endif %}
                 </td>
                 <td class="actions-col">
-                    <a href="/admin-panel/evaluar/{{ video.payment_id }}/{{ video.task_id }}/" class="btn btn-sm btn-primary">Evaluate</a>
+                    <a href="/admin-panel/evaluar/{{ video.payment_id }}/{{ video.task_id }}/" class="btn btn-sm btn-primary">{% t "Evaluate" %}</a>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" class="text-center text-muted">No videos available</td>
+                <td colspan="6" class="text-center text-muted">{% t "No videos available" %}</td>
             </tr>
             {% endfor %}
         </tbody>

@@ -1,9 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
+{% load panel_i18n %}<!DOCTYPE html>
+<html lang="{{ panel_lang }}" style="{{ panel_accent.style }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Admin Panel{% endblock %}</title>
+    <title>{% block title %}{% t "Admin Panel" %}{% endblock %}</title>
     <script>
         (function () {
             try {
@@ -21,8 +21,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/admin_panel.css">
+    <link rel="stylesheet" href="/static/css/admin_panel.css?v={{ asset_v }}">
     {% block extra_css %}{% endblock %}
+    {{ panel_shortcuts|json_script:"panelShortcuts" }}
+    <script>
+        // Atajos de teclado configurados en Configuración > Atajos
+        window.PANEL_SHORTCUTS = JSON.parse(document.getElementById('panelShortcuts').textContent);
+        window.PANEL_SHORTCUTS_ENABLED = {{ panel_shortcuts_enabled|yesno:"true,false" }};
+        window.panelShortcutKey = function (e) { return e.key.toLowerCase(); };
+    </script>
 </head>
 <body>
     <div class="admin-container">
@@ -36,57 +43,63 @@
                     }
                 } catch (e) {}
             </script>
-            <button class="sidebar-handle" id="btnCollapse" title="Collapse menu">
+            <button class="sidebar-handle" id="btnCollapse" title="{% t 'Collapse menu' %}">
                 <i class="fas fa-chevron-left"></i>
             </button>
             <div class="sidebar-resizer" id="sidebarResizer" role="separator" aria-orientation="vertical"
-                 aria-label="Resize menu" title="Drag to resize the menu (double-click to reset)"></div>
+                 aria-label="Resize menu" title="{% t 'Drag to resize the menu (double-click to reset)' %}"></div>
 
             <div class="sidebar-profile" id="sidebarProfile">
+                {% with profile=user.evaluator_profile %}
                 <div class="profile-avatar">
+                    {% if profile.image_url %}
+                    <img src="{{ profile.image_url }}" alt="">
+                    {% else %}
                     <i class="fas fa-user"></i>
+                    {% endif %}
                 </div>
                 <div class="profile-info">
-                    <span class="profile-name">{{ user.get_full_name|default:user.username|default:"Administrator" }}</span>
-                    <span class="profile-role">Admin</span>
+                    {% t "Administrator" as admin_label %}<span class="profile-name">{{ user.get_full_name|default:user.username|default:admin_label }}</span>
+                    <span class="profile-role">{% if user.is_superuser %}{% t "Admin" %}{% elif profile %}{% t profile.get_role_display %}{% else %}{% t "Staff" %}{% endif %}</span>
                 </div>
-                <button class="profile-chevron" id="btnProfileMenu" title="Account">
+                {% endwith %}
+                <button class="profile-chevron" id="btnProfileMenu" title="{% t 'Account' %}">
                     <i class="fas fa-chevron-down"></i>
                 </button>
                 <div class="profile-menu" id="profileMenu">
-                    <a href="/admin-panel/config/"><i class="fas fa-cog"></i> Settings</a>
+                    <a href="/admin-panel/config/"><i class="fas fa-cog"></i> {% t "Settings" %}</a>
                     <form method="post" action="/logout/">
                         {% csrf_token %}
-                        <button type="submit"><i class="fas fa-sign-out-alt"></i> Log out</button>
+                        <button type="submit"><i class="fas fa-sign-out-alt"></i> {% t "Log out" %}</button>
                     </form>
                 </div>
             </div>
 
             <div class="sidebar-search">
-                <input type="text" id="sidebarSearch" placeholder="Search dashboard" autocomplete="off">
+                <input type="text" id="sidebarSearch" placeholder="{% t 'Search dashboard' %}" autocomplete="off">
                 <i class="fas fa-search"></i>
             </div>
 
             <nav class="sidebar-nav" id="sidebarNav">
                 <a href="/admin-panel/" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
                     <i class="fas fa-chart-bar"></i>
-                    <span>Dashboard</span>
+                    <span>{% t "Dashboard" %}</span>
                 </a>
                 <a href="/admin-panel/videos/" class="nav-item {% if active_page == 'videos' %}active{% endif %}">
                     <i class="fas fa-video"></i>
-                    <span>Videos</span>
+                    <span>{% t "Videos" %}</span>
                 </a>
                 <a href="/admin-panel/tabla-anotaciones/" class="nav-item {% if active_page == 'tabla' %}active{% endif %}">
                     <i class="fas fa-table"></i>
-                    <span>Annotation Table</span>
+                    <span>{% t "Annotation Table" %}</span>
                 </a>
                 <a href="/admin-panel/campanas/" class="nav-item {% if active_page == 'campanas' %}active{% endif %}">
                     <i class="fas fa-clipboard-list"></i>
-                    <span>Campaigns</span>
+                    <span>{% t "Campaigns" %}</span>
                 </a>
                 <a href="/admin-panel/reportes/" class="nav-item {% if active_page == 'reportes' %}active{% endif %}">
                     <i class="fas fa-chart-line"></i>
-                    <span>Reports</span>
+                    <span>{% t "Reports" %}</span>
                 </a>
 
                 <hr class="sidebar-divider">
@@ -94,32 +107,32 @@
                 <div class="nav-row">
                     <a href="/admin-panel/guia/" class="nav-item {% if active_page == 'guia' %}active{% endif %}">
                         <i class="fas fa-book"></i>
-                        <span>Evaluation Guide</span>
+                        <span>{% t "Evaluation Guide" %}</span>
                     </a>
                     <button type="button" class="nav-row-action" id="btnOpenGuide"
-                            title="Open guide in a side panel (?)" aria-label="Open evaluation guide panel"
+                            title="{% t 'Open guide in a side panel (?)' %}" aria-label="Open evaluation guide panel"
                             aria-controls="guideDrawer" aria-expanded="false">
                         <i class="fas fa-book-open"></i>
                     </button>
                 </div>
                 <a href="/admin-panel/config/" class="nav-item {% if active_page == 'config' %}active{% endif %}">
                     <i class="fas fa-cog"></i>
-                    <span>Settings</span>
+                    <span>{% t "Settings" %}</span>
                 </a>
 
-                <p class="nav-empty" id="navEmpty">No results found</p>
+                <p class="nav-empty" id="navEmpty">{% t "No results found" %}</p>
             </nav>
 
             <div class="sidebar-footer">
-                <button class="footer-btn" id="btnTheme" title="Toggle dark mode" type="button">
+                <button class="footer-btn" id="btnTheme" title="{% t 'Toggle dark mode' %}" type="button">
                     <i class="fas fa-moon"></i>
                 </button>
-                <a class="footer-btn" href="/admin-panel/config/" title="Settings" type="button">
+                <a class="footer-btn" href="/admin-panel/config/" title="{% t 'Settings' %}" type="button">
                     <i class="fas fa-cog"></i>
                 </a>
                 <form method="post" action="/logout/">
                     {% csrf_token %}
-                    <button class="footer-btn" type="submit" title="Log out">
+                    <button class="footer-btn" type="submit" title="{% t 'Log out' %}">
                         <i class="fas fa-sign-out-alt"></i>
                     </button>
                 </form>
@@ -145,27 +158,27 @@
         <header class="guide-drawer-header">
             <div class="guide-drawer-title">
                 <i class="fas fa-book-open"></i>
-                <h5 id="guideDrawerTitle">Evaluation Guide</h5>
-                <a href="/admin-panel/guia/" class="guide-fullpage" title="Open as full page"><i class="fas fa-external-link-alt"></i></a>
-                <button type="button" class="guide-close" id="btnCloseGuide" aria-label="Close guide">&times;</button>
+                <h5 id="guideDrawerTitle">{% t "Evaluation Guide" %}</h5>
+                <a href="/admin-panel/guia/" class="guide-fullpage" title="{% t 'Open as full page' %}"><i class="fas fa-external-link-alt"></i></a>
+                <button type="button" class="guide-close" id="btnCloseGuide" aria-label="{% t 'Close guide' %}">&times;</button>
             </div>
             <div class="guide-search">
                 <i class="fas fa-search"></i>
-                <input type="search" id="guideSearch" placeholder="Search the guide (e.g. PUZZ, Training, Layout)" autocomplete="off">
+                <input type="search" id="guideSearch" placeholder="{% t 'Search the guide (e.g. PUZZ, Training, Layout)' %}" autocomplete="off">
             </div>
             <nav class="guide-chips" id="guideChips">
-                <button type="button" data-target="workflow">How to</button>
-                <button type="button" data-target="shortcuts">Shortcuts</button>
-                <button type="button" data-target="indicators">Indicators</button>
-                <button type="button" data-target="moments">Task moments</button>
-                <button type="button" data-target="formulation">Writing problems</button>
-                <button type="button" data-target="severity">Severity</button>
-                <button type="button" data-target="types">Types</button>
+                <button type="button" data-target="workflow">{% t "How to" %}</button>
+                <button type="button" data-target="shortcuts">{% t "Shortcuts" %}</button>
+                <button type="button" data-target="indicators">{% t "Indicators" %}</button>
+                <button type="button" data-target="moments">{% t "Task moments" %}</button>
+                <button type="button" data-target="formulation">{% t "Writing problems" %}</button>
+                <button type="button" data-target="severity">{% t "Severity" %}</button>
+                <button type="button" data-target="types">{% t "Types" %}</button>
             </nav>
         </header>
         <div class="guide-drawer-body" id="guideBody">
             {% include "evaluation/_guia_contenido.html" %}
-            <p class="guide-noresults" id="guideNoResults" hidden>No matches in the guide.</p>
+            <p class="guide-noresults" id="guideNoResults" hidden>{% t "No matches in the guide." %}</p>
         </div>
     </aside>
 
@@ -347,7 +360,8 @@
                 if (e.key === 'Escape' && isOpen()) { closeGuide(); return; }
                 var el = document.activeElement;
                 var typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
-                if (e.key === '?' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (window.PANEL_SHORTCUTS_ENABLED && panelShortcutKey(e) === PANEL_SHORTCUTS.toggle_guide
+                        && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
                     e.preventDefault();
                     isOpen() ? closeGuide() : openGuide();
                 }
