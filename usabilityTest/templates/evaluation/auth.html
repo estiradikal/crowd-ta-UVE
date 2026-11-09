@@ -7,26 +7,42 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="/static/css/panel_auth.css?v={{ asset_v }}">
     <script>
         /* Aplica el tema guardado antes de pintar, para evitar un parpadeo blanco */
         (function () {
             var t = null;
-            try { t = localStorage.getItem('authTheme'); } catch (e) {}
+            try { t = localStorage.getItem('admin-theme'); } catch (e) {}
             if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
             document.documentElement.setAttribute('data-theme', t);
         })();
     </script>
 </head>
 <body>
+<!-- Íconos de línea fina (mismo estilo que el panel) -->
+<svg class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.7 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.2 3.2"/><path d="M6.6 6.6A16 16 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m2 2 20 20"/></symbol>
+    <symbol id="i-user-check" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="m16 11 2 2 4-4"/></symbol>
+    <symbol id="i-user-plus" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M19 8v6"/><path d="M22 11h-6"/></symbol>
+    <symbol id="i-login" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M2 18h1.4a4 4 0 0 0 3.3-1.7l4.6-6.6A4 4 0 0 1 14.6 8H22"/><path d="m18 4 4 4-4 4"/><path d="M2 6h1.4a4 4 0 0 1 3.3 1.7l.6.8"/><path d="M22 16h-7.4a4 4 0 0 1-3.3-1.7l-.6-.8"/><path d="m18 20 4-4-4-4"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
+</svg>
+
 <!-- Efecto de rastro de píxeles en el fondo blanco (sigue al cursor) -->
 <div id="pixelTrail" class="pixel-trail-bg" aria-hidden="true"></div>
 
 <!-- Botón de modo claro / oscuro -->
 <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
-    <i class="fas fa-moon icon-moon"></i>
-    <i class="fas fa-sun icon-sun"></i>
+    <svg class="ico icon-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+    <svg class="ico icon-sun" aria-hidden="true"><use href="#i-sun"/></svg>
 </button>
 <main class="auth-page">
     <div class="auth-shell {% if mode == 'signup' %}signup-active{% endif %}" id="authShell">
@@ -41,27 +57,27 @@
                 <p class="subtitle">Enter your credentials to access the panel.</p>
 
                 {% if login_form.non_field_errors %}
-                <div class="form-alert">{% for e in login_form.non_field_errors %}{{ e }}{% endfor %}</div>
+                <div class="form-alert"><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg><span>{% for e in login_form.non_field_errors %}{{ e }}{% endfor %}</span></div>
                 {% endif %}
 
                 <label class="field">
                     <span>Username</span>
                     <div class="input-icon">
-                        <i class="fas fa-user"></i>
-                        <input type="text" name="username" value="{{ login_form.username.value|default:'' }}"
+                        <svg class="ico" aria-hidden="true"><use href="#i-user"/></svg>
+                        <input type="text" name="username" placeholder=" " value="{{ login_form.username.value|default:'' }}"
                                autocomplete="username" required autofocus>
                     </div>
                 </label>
                 <label class="field">
                     <span>Password</span>
                     <div class="input-icon">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" name="password" autocomplete="current-password" required>
-                        <button type="button" class="toggle-pass" aria-label="Show password"><i class="fas fa-eye"></i></button>
+                        <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>
+                        <input type="password" name="password" placeholder=" " autocomplete="current-password" required>
+                        <button type="button" class="toggle-pass" aria-label="Show password"><svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg></button>
                     </div>
                 </label>
 
-                <button type="submit" class="btn-primary">Log in</button>
+                <button type="submit" class="btn-primary">Log in <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
                 <p class="mobile-switch">Don't have an account? <button type="button" data-go="signup">Sign up</button></p>
             </form>
         </section>
@@ -71,10 +87,10 @@
             <form method="post" action="/admin-panel/signup/" enctype="multipart/form-data" novalidate id="signupForm">
                 {% csrf_token %}
                 <h1 id="signupTitle">Create account</h1>
-                <p class="subtitle subtitle-role">Register with the role <span class="role-chip"><i class="fas fa-user-check"></i> Evaluator</span></p>
+                <p class="subtitle subtitle-role">Register with the role <span class="role-chip"><svg class="ico" aria-hidden="true"><use href="#i-user-check"/></svg> Evaluator</span></p>
 
                 {% if signup_form.non_field_errors %}
-                <div class="form-alert">{% for e in signup_form.non_field_errors %}{{ e }}{% endfor %}</div>
+                <div class="form-alert"><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg><span>{% for e in signup_form.non_field_errors %}{{ e }}{% endfor %}</span></div>
                 {% endif %}
 
                 <!-- Avatar -->
@@ -83,9 +99,9 @@
                         <img id="avatarPreviewImg" alt="Selected avatar">
                     </div>
                     <div class="avatar-actions">
-                        <button type="button" class="btn-ghost" id="btnShuffle"><i class="fas fa-random"></i> Other avatars</button>
+                        <button type="button" class="btn-ghost" id="btnShuffle"><svg class="ico" aria-hidden="true"><use href="#i-shuffle"/></svg> Other avatars</button>
                         <label class="btn-ghost">
-                            <i class="fas fa-upload"></i> Upload photo
+                            <svg class="ico" aria-hidden="true"><use href="#i-upload"/></svg> Upload photo
                             <input type="file" name="photo" id="photoInput" accept="image/*" hidden>
                         </label>
                     </div>
@@ -132,7 +148,7 @@
                     </label>
                 </div>
 
-                <button type="submit" class="btn-primary">Sign up</button>
+                <button type="submit" class="btn-primary">Sign up <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
                 <p class="mobile-switch">Already have an account? <button type="button" data-go="login">Log in</button></p>
             </form>
         </section>
@@ -141,13 +157,13 @@
         <aside class="auth-card overlay-card" aria-hidden="false">
             <div class="overlay-track">
                 <div class="overlay-pane pane-to-signup">
-                    <i class="fas fa-user-plus overlay-icon"></i>
+                    <span class="overlay-icon"><svg class="ico" aria-hidden="true"><use href="#i-user-plus"/></svg></span>
                     <h2>New evaluator?</h2>
                     <p>Create your account, choose an avatar and start reviewing videos.</p>
                     <button type="button" class="btn-outline" data-go="signup">Sign up</button>
                 </div>
                 <div class="overlay-pane pane-to-login">
-                    <i class="fas fa-sign-in-alt overlay-icon"></i>
+                    <span class="overlay-icon"><svg class="ico" aria-hidden="true"><use href="#i-login"/></svg></span>
                     <h2>Already registered?</h2>
                     <p>Log in with your username and password to continue evaluating.</p>
                     <button type="button" class="btn-outline" data-go="login">Log in</button>
@@ -165,7 +181,7 @@
     document.getElementById('themeToggle').addEventListener('click', function () {
         var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         root.setAttribute('data-theme', next);
-        try { localStorage.setItem('authTheme', next); } catch (e) {}
+        try { localStorage.setItem('admin-theme', next); } catch (e) {}
     });
 
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -192,7 +208,7 @@
             var input = btn.parentElement.querySelector('input');
             var show = input.type === 'password';
             input.type = show ? 'text' : 'password';
-            btn.innerHTML = '<i class="fas fa-eye' + (show ? '-slash' : '') + '"></i>';
+            btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-eye' + (show ? '-off' : '') + '"/></svg>';
         });
     });
 

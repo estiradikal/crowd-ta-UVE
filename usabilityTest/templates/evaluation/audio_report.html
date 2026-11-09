@@ -1,0 +1,153 @@
+{% extends "evaluation/base_admin.html" %}
+{% load panel_i18n %}
+
+{% block title %}{% t "Audio Report" %} - {% t "Admin Panel" %}{% endblock %}
+
+{% block content %}
+<div class="videos-list audio-report">
+    <header class="vl-header">
+        <h2>{% t "Audio Report" %}</h2>
+        <p class="vl-subtitle">{% t "Recordings of each worker and task: listen to the audio or download the file." %}</p>
+    </header>
+
+    <div class="vl-toolbar">
+        <span class="audio-count">
+            <svg class="ico" aria-hidden="true"><use href="#i-headphones"/></svg>
+            <strong>{{ grabaciones|length }}</strong> / {{ total_grabaciones }} {% t "recordings" %}
+        </span>
+
+        <form class="vl-search">
+            <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+            <input type="text" name="q" class="vl-search-wide" placeholder="{% t 'Search by Worker ID or Task ID...' %}" value="{{ busqueda }}" aria-label="{% t 'Search by Worker ID or Task ID...' %}">
+            <button type="submit">{% t "Search" %}</button>
+            {% if busqueda %}
+            <a href="/admin-panel/audio-report/" class="vl-clear" title="{% t 'Show all' %}">
+                <svg class="ico" aria-hidden="true"><use href="#i-x"/></svg> {% t "Show all" %}
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Reproductor compartido: aparece al pulsar "escuchar" en una fila -->
+    <div class="audio-player" id="audioPlayer" hidden>
+        <div class="audio-player-info">
+            <span class="audio-player-icon"><svg class="ico" aria-hidden="true"><use href="#i-volume"/></svg></span>
+            <span class="audio-player-text">
+                <small>{% t "Now playing" %}</small>
+                <strong id="audioPlayerLabel"></strong>
+            </span>
+        </div>
+        <audio id="audioElement" controls preload="none"></audio>
+        <button type="button" class="audio-player-close" id="audioPlayerClose" aria-label="{% t 'Close' %}" title="{% t 'Close' %}">
+            <svg class="ico" aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+    </div>
+
+    <div class="admin-table-wrap vl-table-wrap">
+    <table class="table vl-table">
+        <thead>
+            <tr>
+                <th>{% t "Worker ID" %}</th>
+                <th>{% t "Task ID" %}</th>
+                <th>{% t "Date" %}</th>
+                <th>{% t "File" %}</th>
+                <th class="actions-col">{% t "Audio" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for g in grabaciones %}
+            {% with url="/admin-panel/video/"|add:g.payment_id|add:"/"|add:g.task_id|add:"/"|add:g.date|add:"/"|add:g.filename|add:"/" %}
+            <tr data-audio-row>
+                <td>
+                    <div class="vl-id">
+                        <span class="file-name" title="{{ g.worker_id }}">{{ g.worker_id }}</span>
+                        <button type="button" class="copy-btn vl-copy" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" data-copy="{{ g.worker_id }}"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg></button>
+                    </div>
+                </td>
+                <td><span class="vl-task">{{ g.task_id }}</span></td>
+                <td class="vl-mono text-nowrap">{{ g.date }}</td>
+                <td>
+                    <span class="file-name vl-mono" title="{{ g.filename }}">{{ g.filename|slice:"1:-5" }}</span>
+                </td>
+                <td class="actions-col">
+                    <div class="audio-actions">
+                        <button type="button" class="audio-btn audio-play"
+                                data-src="{{ url }}" data-label="{{ g.worker_id }} · Task {{ g.task_id }} · {{ g.date }}"
+                                title="{% t 'Listen' %}" aria-label="{% t 'Listen' %}">
+                            <svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>
+                        </button>
+                        <a class="audio-btn audio-download" href="{{ url }}?download=1"
+                           title="{% t 'Download' %}" aria-label="{% t 'Download' %}">
+                            <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endwith %}
+            {% empty %}
+            <tr>
+                <td colspan="5" class="vl-empty">
+                    <svg class="ico" aria-hidden="true"><use href="#i-headphones"/></svg>
+                    {% t "No recordings available" %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var player = document.getElementById('audioPlayer');
+    var audio = document.getElementById('audioElement');
+    var label = document.getElementById('audioPlayerLabel');
+    var current = null;  // botón de la fila que está sonando
+    var TXT_LISTEN = "{% t 'Listen' %}", TXT_PAUSE = "{% t 'Pause' %}";
+
+    function setIcon(btn, playing) {
+        if (!btn) return;
+        btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-' + (playing ? 'pause' : 'play') + '"/></svg>';
+        btn.title = playing ? TXT_PAUSE : TXT_LISTEN;
+        btn.setAttribute('aria-label', btn.title);
+        btn.classList.toggle('playing', playing);
+        btn.closest('tr').classList.toggle('audio-row-active', playing || btn === current);
+    }
+
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.audio-play');
+        if (!btn) return;
+        if (btn === current) {
+            audio.paused ? audio.play() : audio.pause();
+            return;
+        }
+        if (current) {
+            var prev = current;
+            current = null;
+            setIcon(prev, false);
+        }
+        current = btn;
+        audio.src = btn.dataset.src;
+        label.textContent = btn.dataset.label;
+        player.hidden = false;
+        audio.play();
+    });
+
+    audio.addEventListener('play', function () { setIcon(current, true); player.classList.add('is-playing'); });
+    audio.addEventListener('pause', function () { setIcon(current, false); player.classList.remove('is-playing'); });
+    audio.addEventListener('ended', function () { setIcon(current, false); player.classList.remove('is-playing'); });
+
+    document.getElementById('audioPlayerClose').addEventListener('click', function () {
+        audio.pause();
+        audio.removeAttribute('src');
+        audio.load();
+        var prev = current;
+        current = null;
+        setIcon(prev, false);
+        player.hidden = true;
+    });
+})();
+</script>
+{% endblock %}

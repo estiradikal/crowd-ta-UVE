@@ -3,14 +3,43 @@
 {% block title %}Evaluation Guide - Admin Panel{% endblock %}
 
 {% block content %}
-<div class="dashboard guide-page">
-    <h2>Evaluation Guide</h2>
-    <p class="text-muted">Methodological guide for evaluators. You can also open it as a side panel from any page with <kbd>?</kbd> or the <i class="fas fa-book-open"></i> button next to "Evaluation Guide" in the menu.</p>
+<div class="guide-page">
+    <header class="guide-page-head">
+        <h2>Evaluation Guide</h2>
+        <p>Everything you need to annotate a video, in one place. You can also open it as a side panel from any page with
+           <kbd>{{ panel_shortcut_labels.toggle_guide }}</kbd> or the
+           <svg class="ico ico-inline" aria-hidden="true"><use href="#i-book-open"/></svg> button next to "Evaluation Guide" in the menu.</p>
+    </header>
 
-    <div class="card mt-4">
-        <div class="card-body">
-            {% include "evaluation/_guia_contenido.html" %}
-        </div>
+    <nav class="guide-page-nav" aria-label="Guide sections">
+        <a href="#g-workflow" data-jump="workflow">How to</a>
+        <a href="#g-shortcuts" data-jump="shortcuts">Shortcuts</a>
+        <a href="#g-indicators" data-jump="indicators">Indicators</a>
+        <a href="#g-moments" data-jump="moments">Task moments</a>
+        <a href="#g-formulation" data-jump="formulation">Writing problems</a>
+        <a href="#g-severity" data-jump="severity">Severity</a>
+        <a href="#g-types" data-jump="types">Types</a>
+    </nav>
+
+    <div class="guide-page-body">
+        {% include "evaluation/_guia_contenido.html" %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Índice de la página completa: salta a cada sección de la guía
+document.querySelectorAll('.guide-page-nav [data-jump]').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+        var section = document.querySelector('.guide-page-body [data-guide-section="' + link.dataset.jump + '"]');
+        if (!section) return;
+        e.preventDefault();
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        section.classList.remove('flash');
+        void section.offsetWidth;
+        section.classList.add('flash');
+    });
+});
+</script>
 {% endblock %}

@@ -109,8 +109,8 @@
     }
     .cb-clear { right: 30px; font-size: 1.1em; }
     .cb-toggle { right: 0; }
-    .cb-toggle i { transition: transform 0.15s ease; }
-    .problem-combobox.open .cb-toggle i { transform: rotate(180deg); }
+    .cb-toggle i, .cb-toggle .ico { transition: transform 0.15s ease; }
+    .problem-combobox.open .cb-toggle i, .problem-combobox.open .cb-toggle .ico { transform: rotate(180deg); }
     .cb-btn:hover { color: var(--text, #212529); }
     .cb-menu {
         position: absolute; z-index: 1050; top: calc(100% + 2px); left: 0; right: 0;
@@ -136,47 +136,50 @@
 <div class="eval-video">
     <div class="eval-header">
         <div class="eval-header-title">
-            <a href="/admin-panel/videos/" class="btn btn-outline-secondary btn-sm">&larr; Back to list</a>
-            <h2 class="d-inline-block ml-3 mb-0">Evaluate Video</h2>
+            <a href="/admin-panel/videos/" class="ev-back" title="Back to list" aria-label="Back to list"><svg class="ico" aria-hidden="true"><use href="#i-arrow-left"/></svg></a>
+            <div>
+                <nav class="ev-crumbs" aria-label="Breadcrumb"><a href="/admin-panel/videos/">Videos</a><span aria-hidden="true">/</span><span>Task {{ task_id }}</span></nav>
+                <h2>Evaluate Video</h2>
+            </div>
         </div>
         <div class="eval-info" aria-label="Evaluation information">
-            <span class="eval-info-item" title="Evaluation ID"><i class="fas fa-hashtag"></i> {{ evaluacion.id }}</span>
+            <span class="eval-info-item" title="Evaluation ID"><svg class="ico" aria-hidden="true"><use href="#i-hash"/></svg> {{ evaluacion.id }}</span>
             {% if evaluacion.completada %}
-                <span class="badge badge-success">Completed</span>
+                <span class="ev-status ev-status-done"><span class="ev-dot"></span>Completed</span>
             {% else %}
-                <span class="badge badge-warning">In Progress</span>
+                <span class="ev-status ev-status-progress"><span class="ev-dot"></span>In Progress</span>
             {% endif %}
-            <span class="eval-info-item" title="Active time spent annotating this video. Paused while this browser tab is hidden.">
-                <i class="far fa-clock"></i> <span class="time-display" id="activeTimer">{{ evaluacion.tiempo_activo_texto }}</span>
+            <span class="eval-info-item ev-timer" title="Active time spent annotating this video. Paused while this browser tab is hidden.">
+                <svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg> <span class="time-display" id="activeTimer">{{ evaluacion.tiempo_activo_texto }}</span>
             </span>
         </div>
     </div>
 
     <!-- Sheet tabs: same sheets as the Excel annotation file -->
-    <ul class="nav nav-tabs sheet-tabs" id="evalTabs" role="tablist">
+    <ul class="nav nav-tabs sheet-tabs ev-tabs" id="evalTabs" role="tablist">
         <li class="nav-item">
             <a class="nav-link active" data-toggle="tab" href="#evaluate" role="tab">
-                <i class="fas fa-video"></i> Evaluate
+                <svg class="ico" aria-hidden="true"><use href="#i-video"/></svg> Evaluate
             </a>
         </li>
         <li class="nav-item">
             <a class="nav-link" data-toggle="tab" href="#annotation-table" role="tab">
-                1. Annotation table <span class="tab-count" id="sheetAnnCount">0</span>
+                <svg class="ico" aria-hidden="true"><use href="#i-table"/></svg> 1. Annotation table <span class="tab-count" id="sheetAnnCount">0</span>
             </a>
         </li>
         <li class="nav-item">
             <a class="nav-link" data-toggle="tab" href="#problem-table" role="tab">
-                2. Problem table <span class="tab-count" id="sheetProbCount">0</span>
+                <svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg> 2. Problem table <span class="tab-count" id="sheetProbCount">0</span>
             </a>
         </li>
         <li class="nav-item">
             <a class="nav-link" data-toggle="tab" href="#time-annotation" role="tab">
-                3. Time annotation
+                <svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg> 3. Time annotation
             </a>
         </li>
         <li class="nav-item">
             <a class="nav-link" data-toggle="tab" href="#problem-summary" role="tab">
-                Problem summary
+                <svg class="ico" aria-hidden="true"><use href="#i-dashboard"/></svg> Problem summary
             </a>
         </li>
     </ul>
@@ -189,12 +192,19 @@
     <div class="eval-split" id="evalSplit">
     <div class="eval-pane eval-pane-main" id="paneMain">
 
-    <div class="card mb-0">
+    <div class="card mb-0 ev-video-card">
         <div class="card-header video-header">
-            <span><strong>Worker ID:</strong> {{ worker_id }} | <strong>Task:</strong> {{ task_id }}</span>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnTheater" aria-pressed="false"
+            <div class="ev-video-meta">
+                <span class="ev-meta-item" title="Worker ID: {{ worker_id }}">
+                    <svg class="ico" aria-hidden="true"><use href="#i-user"/></svg><span class="ev-meta-label">Worker ID</span><span class="ev-meta-value">{{ worker_id }}</span>
+                </span>
+                <span class="ev-meta-item ev-meta-task">
+                    <span class="ev-meta-label">Task</span><span class="ev-chip">{{ task_id }}</span>
+                </span>
+            </div>
+            <button type="button" class="ev-ghost-btn" id="btnTheater" aria-pressed="false"
                     title="Hide the menu and make the video as large as the screen allows">
-                <i class="fas fa-expand"></i> <span>Larger video</span>
+                <svg class="ico ico-expand" aria-hidden="true"><use href="#i-maximize"/></svg><svg class="ico ico-compress" aria-hidden="true"><use href="#i-minimize"/></svg> <span>Larger video</span>
             </button>
         </div>
         <div class="card-body p-0">
@@ -226,67 +236,73 @@
     {% endif %}
 
     <!-- Annotations: right below the video -->
-    <div class="card mb-3">
-        <div class="card-header">
-            <i class="fas fa-list"></i> Annotations (<span id="annotationCount">0</span>)
+    <section class="ev-block mb-3">
+        <header class="ev-block-head">
+            <h3><svg class="ico" aria-hidden="true"><use href="#i-list"/></svg> Annotations <span class="ev-count" id="annotationCount">0</span></h3>
+            <span class="ev-block-hint">Click a time to jump the video there</span>
+        </header>
+        <div class="annotations-table">
+            <table class="table table-sm mb-0 ev-table">
+                <thead>
+                    <tr>
+                        <th class="ev-col-num">#</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th>Problem</th>
+                        <th>Indicator</th>
+                        <th>Context</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="annotationsList"></tbody>
+            </table>
         </div>
-        <div class="card-body p-0">
-            <div class="annotations-table">
-                <table class="table table-sm table-hover mb-0">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>#</th>
-                            <th>Start</th>
-                            <th>End</th>
-                            <th>Problem</th>
-                            <th>Indicator</th>
-                            <th>Context</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="annotationsList"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    </section>
 
     <!-- Problems identified in this video -->
-    <div class="card mb-3">
-        <div class="card-header">
-            <i class="fas fa-exclamation-triangle"></i> Identified Problems (<span id="problemCount">0</span>)
+    <section class="ev-block mb-3">
+        <header class="ev-block-head">
+            <h3><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg> Identified Problems <span class="ev-count" id="problemCount">0</span></h3>
+        </header>
+        <div class="annotations-table">
+            <table class="table table-sm mb-0 ev-table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Problem</th>
+                        <th>Severity</th>
+                        <th>Type</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="problemsList"></tbody>
+            </table>
         </div>
-        <div class="card-body p-0">
-            <div class="annotations-table">
-                <table class="table table-sm table-hover mb-0">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>Code</th>
-                            <th>Problem</th>
-                            <th>Severity</th>
-                            <th>Type</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="problemsList"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    </section>
 
-    <!-- Complete -->
-    <div class="pane-grid pane-grid-controls mb-5">
-        <div class="card">
-            <div class="card-header">General Observations</div>
-            <div class="card-body">
-                <textarea class="form-control" id="generalObs" rows="3" placeholder="General observations about the evaluation...">{{ evaluacion.observaciones_generales }}</textarea>
+    <!-- Complete: observaciones + finalizar en una sola tarjeta -->
+    <section class="ev-block ev-finish mb-5">
+        <div class="ev-finish-body">
+            <div class="ev-finish-head">
+                <span class="ev-finish-icon"><svg class="ico" aria-hidden="true"><use href="#i-flag"/></svg></span>
+                <div>
+                    <h3>Finish evaluation</h3>
+                    <p>When you have reviewed the whole video, add any general notes and finish.</p>
+                </div>
             </div>
+            <label for="generalObs" class="ev-finish-label">General Observations <span class="ann-opt">optional</span></label>
+            <textarea class="form-control" id="generalObs" rows="3" placeholder="General observations about the evaluation...">{{ evaluacion.observaciones_generales }}</textarea>
         </div>
-        <div class="d-flex align-items-center justify-content-center">
-            <button class="btn btn-success btn-lg btn-block" id="btnComplete" type="button">
-                <i class="fas fa-check"></i> Finish Evaluation
+        <footer class="ev-finish-foot">
+            <span class="ev-finish-note">
+                <svg class="ico" aria-hidden="true"><use href="#i-info"/></svg>
+                Your annotations are already saved. Finishing marks the video as evaluated.
+            </span>
+            <button class="btn ev-finish-btn" id="btnComplete" type="button">
+                <svg class="ico" aria-hidden="true"><use href="#i-check"/></svg> Finish Evaluation
             </button>
-        </div>
-    </div>
+        </footer>
+    </section>
 
     </div><!-- /#paneMain -->
 
@@ -295,66 +311,96 @@
 
     <div class="eval-pane eval-pane-side" id="paneSide">
         <div class="card annotation-card">
-            <div class="card-header bg-primary text-white">
-                <i class="fas fa-plus-circle"></i> New Annotation
+            <div class="card-header ann-head">
+                <span class="ann-head-icon"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></span>
+                <span class="ann-head-text">
+                    <strong>New Annotation</strong>
+                    <small>Mark the moment, then fill in the 4 steps.</small>
+                </span>
             </div>
             <div class="card-body">
                 <form id="annotationForm">
-                    <div class="form-row">
-                        <div class="form-group col-6">
-                            <label for="formStartTime">Start Time <kbd class="key-hint">{{ panel_shortcut_labels.mark_start }}</kbd></label>
-                            <input type="text" class="form-control" id="formStartTime" readonly value="00:00">
+                    <!-- Paso 1: cuándo -->
+                    <div class="ann-step">
+                        <p class="ann-label"><span class="ann-num">1</span> When did it happen?</p>
+                        <div class="ann-times">
+                            <div class="ann-time">
+                                <label for="formStartTime">Start <kbd class="key-hint">{{ panel_shortcut_labels.mark_start }}</kbd></label>
+                                <input type="text" class="form-control" id="formStartTime" readonly value="00:00">
+                            </div>
+                            <span class="ann-times-arrow" aria-hidden="true"><svg class="ico"><use href="#i-arrow-right"/></svg></span>
+                            <div class="ann-time">
+                                <label for="formEndTime">End <kbd class="key-hint">{{ panel_shortcut_labels.mark_end }}</kbd> <span class="ann-opt">optional</span></label>
+                                <input type="text" class="form-control" id="formEndTime" readonly value="00:00">
+                            </div>
                         </div>
-                        <div class="form-group col-6">
-                            <label for="formEndTime">End Time <kbd class="key-hint">{{ panel_shortcut_labels.mark_end }}</kbd></label>
-                            <input type="text" class="form-control" id="formEndTime" readonly value="00:00">
+                        <div class="mark-hint">
+                            <span><kbd>{{ panel_shortcut_labels.mark_start }}</kbd> start</span>
+                            <span><kbd>{{ panel_shortcut_labels.mark_end }}</kbd> end</span>
+                            <span><kbd>{{ panel_shortcut_labels.play_pause }}</kbd> play / pause</span>
+                            <span><kbd>{{ panel_shortcut_labels.rewind }}</kbd><kbd>{{ panel_shortcut_labels.forward }}</kbd> ±5 s</span>
+                            <a href="#" class="help-link" data-open-guide="shortcuts" title="Guide: keyboard shortcuts" aria-label="Open guide: keyboard shortcuts"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg></a>
                         </div>
                     </div>
-                    <p class="mark-hint text-muted">
-                        Press <kbd>{{ panel_shortcut_labels.mark_start }}</kbd> / <kbd>{{ panel_shortcut_labels.mark_end }}</kbd> to mark start / end at the current video time,
-                        <kbd>{{ panel_shortcut_labels.play_pause }}</kbd> to play or pause, <kbd>{{ panel_shortcut_labels.rewind }}</kbd> / <kbd>{{ panel_shortcut_labels.forward }}</kbd> to move 5 s.
-                        <a href="#" class="help-link" data-open-guide="shortcuts" title="Guide: keyboard shortcuts" aria-label="Open guide: keyboard shortcuts"><i class="fas fa-question-circle"></i></a>
-                    </p>
-                    <div class="form-group">
-                        <label for="formProblemText" id="formProblemLabel">Problem</label> <a href="#" class="help-link" data-open-guide="formulation" title="Guide: how to write a problem" aria-label="Open guide: how to write a problem"><i class="fas fa-question-circle"></i></a>
+
+                    <!-- Paso 2: problema -->
+                    <div class="form-group ann-step">
+                        <div class="ann-label">
+                            <label for="formProblemText" id="formProblemLabel"><span class="ann-num">2</span> Problem</label>
+                            <a href="#" class="help-link" data-open-guide="formulation" title="Guide: how to write a problem" aria-label="Open guide: how to write a problem"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg></a>
+                        </div>
                         <div class="problem-combobox" id="problemCombobox">
                             <input type="hidden" id="formProblemId" value="">
                             <div class="cb-input-wrap">
                                 <input type="text" class="form-control" id="formProblemText"
-                                       placeholder="-- Select problem --" autocomplete="off"
+                                       placeholder="Search or create a problem…" autocomplete="off"
                                        role="combobox" aria-expanded="false" aria-controls="problemListbox"
                                        aria-autocomplete="list" aria-labelledby="formProblemLabel">
-                                <button type="button" class="cb-btn cb-clear" id="cbClear" title="Clear" aria-label="Clear" hidden>&times;</button>
-                                <button type="button" class="cb-btn cb-toggle" id="cbToggle" tabindex="-1" aria-label="Show problem list"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>
+                                <button type="button" class="cb-btn cb-clear" id="cbClear" title="Clear" aria-label="Clear" hidden><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
+                                <button type="button" class="cb-btn cb-toggle" id="cbToggle" tabindex="-1" aria-label="Show problem list"><svg class="ico" aria-hidden="true"><use href="#i-chevron"/></svg></button>
                             </div>
                             <div class="cb-menu" id="problemListbox" role="listbox" aria-label="Problems" hidden></div>
                         </div>
-                        <small class="text-muted">Select an existing problem or create a new one.</small>
+                        <small class="ann-help">Select an existing problem or create a new one.</small>
                     </div>
-                    <div class="form-group">
-                        <label for="formIndicator">Indicator</label> <a href="#" class="help-link" data-open-guide="indicators" title="Guide: indicators" aria-label="Open guide: indicators"><i class="fas fa-question-circle"></i></a>
+
+                    <!-- Paso 3: indicador -->
+                    <div class="form-group ann-step">
+                        <div class="ann-label">
+                            <label for="formIndicator"><span class="ann-num">3</span> What did you see?</label>
+                            <a href="#" class="help-link" data-open-guide="indicators" title="Guide: indicators" aria-label="Open guide: indicators"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg></a>
+                        </div>
                         <select class="form-control" id="formIndicator" required>
-                            <option value="">-- Select indicator --</option>
-                            <option value="ACT">ACT - Wrong action</option>
-                            <option value="DISC">DISC - Discontinues action</option>
-                            <option value="EXE">EXE - Execution problem</option>
-                            <option value="REP">REP - Repeated action</option>
-                            <option value="CORR">CORR - Corrective action</option>
-                            <option value="STOP">STOP - Task stopped</option>
-                            <option value="GOAL">GOAL - Wrong goal</option>
-                            <option value="PUZZ">PUZZ - Puzzled</option>
-                            <option value="RAND">RAND - Random actions</option>
-                            <option value="SEARCH">SEARCH - Searches for function</option>
-                            <option value="DIFF">DIFF - Execution difficulty</option>
-                            <option value="DSF">DSF - Doubt/surprise/frustration</option>
-                            <option value="REC">REC - Recognition of error</option>
-                            <option value="QUIT">QUIT - Quits task</option>
+                            <option value="">Choose an indicator</option>
+                            <optgroup label="What the worker does">
+                                <option value="ACT">ACT - Wrong action</option>
+                                <option value="DISC">DISC - Discontinues action</option>
+                                <option value="EXE">EXE - Execution problem</option>
+                                <option value="REP">REP - Repeated action</option>
+                                <option value="CORR">CORR - Corrective action</option>
+                                <option value="STOP">STOP - Task stopped</option>
+                            </optgroup>
+                            <optgroup label="What the worker says or shows">
+                                <option value="GOAL">GOAL - Wrong goal</option>
+                                <option value="PUZZ">PUZZ - Puzzled</option>
+                                <option value="RAND">RAND - Random actions</option>
+                                <option value="SEARCH">SEARCH - Searches for function</option>
+                                <option value="DIFF">DIFF - Execution difficulty</option>
+                                <option value="DSF">DSF - Doubt/surprise/frustration</option>
+                                <option value="REC">REC - Recognition of error</option>
+                                <option value="QUIT">QUIT - Quits task</option>
+                            </optgroup>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="formContext">Task Context</label> <a href="#" class="help-link" data-open-guide="moments" title="Guide: task moments" aria-label="Open guide: task moments"><i class="fas fa-question-circle"></i></a>
+
+                    <!-- Paso 4: momento de la tarea -->
+                    <div class="form-group ann-step">
+                        <div class="ann-label">
+                            <label for="formContext"><span class="ann-num">4</span> Task moment</label>
+                            <a href="#" class="help-link" data-open-guide="moments" title="Guide: task moments" aria-label="Open guide: task moments"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg></a>
+                        </div>
                         <select class="form-control" id="formContext" required>
-                            <option value="">-- Select context --</option>
+                            <option value="">Choose a task moment</option>
                             <option value="Qualification">Qualification</option>
                             <option value="Instructions">Instructions</option>
                             <option value="Demographic questionnaire">Demographic questionnaire</option>
@@ -365,13 +411,20 @@
                             <option value="Help/Support/Feedback">Help/Support/Feedback</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>Comments</label>
-                        <textarea class="form-control" id="formComments" rows="2" placeholder="Additional comments..."></textarea>
+
+                    <!-- Comentarios (opcional) -->
+                    <div class="form-group ann-step">
+                        <div class="ann-label">
+                            <label for="formComments">Comments <span class="ann-opt">optional</span></label>
+                        </div>
+                        <textarea class="form-control" id="formComments" rows="2" placeholder="Anything that helps explain what happened…"></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block">
-                        <i class="fas fa-save"></i> Save Annotation
-                    </button>
+
+                    <div class="ann-submit">
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <svg class="ico" aria-hidden="true"><use href="#i-save"/></svg> Save Annotation
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -1029,8 +1082,8 @@
 
     function sevBadge(severity) {
         if (!severity) return '-';
-        var cls = severity === 'Critical' ? 'danger' : (severity === 'Serious' ? 'warning' : 'secondary');
-        return '<span class="badge badge-' + cls + '">' + escHtml(severity) + '</span>';
+        var cls = severity === 'Critical' ? 'critical' : (severity === 'Serious' ? 'serious' : 'minor');
+        return '<span class="ev-sev ev-sev-' + cls + '"><span class="ev-dot"></span>' + escHtml(severity) + '</span>';
     }
 
     function timeLink(t) {
@@ -1039,8 +1092,10 @@
     }
 
     function actionButtons(kind, id) {
-        return '<button class="btn btn-sm btn-outline-primary edit-' + kind + ' mr-1" data-id="' + id + '" title="Edit"><i class="fas fa-pen"></i></button>' +
-               '<button class="btn btn-sm btn-danger delete-' + kind + '" data-id="' + id + '" title="Delete"><i class="fas fa-trash"></i></button>';
+        return '<span class="ev-actions">' +
+               '<button type="button" class="ev-icon-btn edit-' + kind + '" data-id="' + id + '" title="Edit" aria-label="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>' +
+               '<button type="button" class="ev-icon-btn ev-danger delete-' + kind + '" data-id="' + id + '" title="Delete" aria-label="Delete"><svg class="ico" aria-hidden="true"><use href="#i-trash"/></svg></button>' +
+               '</span>';
     }
 
     function renderAnnotations() {
@@ -1048,16 +1103,19 @@
         tbody.innerHTML = '';
         document.getElementById('annotationCount').textContent = annotations.length;
 
+        if (!annotations.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="ev-empty">No annotations yet. Press <kbd>' + '{{ panel_shortcut_labels.mark_start|escapejs }}' + '</kbd> while the video plays to mark a moment.</td></tr>';
+        }
         annotations.forEach(function(ann, index) {
             var row = document.createElement('tr');
             row.className = 'annotation-row';
             row.innerHTML =
-                '<td>' + (index + 1) + '</td>' +
+                '<td class="ev-col-num">' + (index + 1) + '</td>' +
                 '<td>' + timeLink(ann.startTime) + '</td>' +
                 '<td>' + timeLink(ann.endTime) + '</td>' +
                 '<td class="td-truncate" title="' + escHtml(ann.problem) + '">' + escHtml(ann.problem) + '</td>' +
-                '<td><span class="badge badge-info">' + escHtml(ann.indicator) + '</span></td>' +
-                '<td>' + escHtml(ann.context) + '</td>' +
+                '<td><span class="ev-chip ev-chip-accent">' + escHtml(ann.indicator) + '</span></td>' +
+                '<td class="ev-muted">' + escHtml(ann.context) + '</td>' +
                 '<td class="actions-cell">' + actionButtons('annotation', ann.id) + '</td>';
             tbody.appendChild(row);
         });
@@ -1070,13 +1128,16 @@
         tbody.innerHTML = '';
         document.getElementById('problemCount').textContent = problems.length;
 
+        if (!problems.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="ev-empty">No problems yet. They appear here when you save an annotation with a problem.</td></tr>';
+        }
         problems.forEach(function(prob) {
             var row = document.createElement('tr');
             row.innerHTML =
-                '<td><span class="badge badge-dark">' + escHtml(prob.codigo) + '</span></td>' +
+                '<td><span class="ev-chip ev-code">' + escHtml(prob.codigo) + '</span></td>' +
                 '<td>' + escHtml(prob.description) + '</td>' +
                 '<td>' + sevBadge(prob.severity) + '</td>' +
-                '<td>' + escHtml(prob.type) + '</td>' +
+                '<td class="ev-muted">' + escHtml(prob.type) + '</td>' +
                 '<td class="actions-cell">' + actionButtons('problem', prob.id) + '</td>';
             tbody.appendChild(row);
         });
@@ -1097,7 +1158,7 @@
                 '<td class="video-cell" title="' + escHtml(VIDEO_LABEL) + '">' + escHtml(VIDEO_LABEL) + '</td>' +
                 '<td class="mono">' + timeLink(ann.startTime) + '</td>' +
                 '<td class="mono">' + timeLink(ann.endTime) + '</td>' +
-                '<td><span class="badge badge-info">' + escHtml(ann.indicator) + '</span></td>' +
+                '<td><span class="ev-chip ev-chip-accent">' + escHtml(ann.indicator) + '</span></td>' +
                 '<td>' + escHtml(ann.context) + '</td>' +
                 '<td class="wrap">' + escHtml(ann.problem) + '</td>' +
                 '<td class="wrap">' + escHtml(ann.comments) + '</td>' +
@@ -1115,7 +1176,7 @@
         }
         tbody.innerHTML = problems.map(function(prob) {
             return '<tr>' +
-                '<td><span class="badge badge-dark">' + escHtml(prob.codigo) + '</span></td>' +
+                '<td><span class="ev-chip ev-code">' + escHtml(prob.codigo) + '</span></td>' +
                 '<td class="wrap">' + escHtml(prob.description) + '</td>' +
                 '<td>' + sevBadge(prob.severity) + '</td>' +
                 '<td>' + escHtml(prob.type) + '</td>' +
@@ -1170,7 +1231,7 @@
                 ? Math.round(g.durations.reduce(function(s, d) { return s + d; }, 0) / g.durations.length * 10) / 10
                 : '-';
             return '<tr>' +
-                '<td>' + (g.codigo ? '<span class="badge badge-dark">' + escHtml(g.codigo) + '</span>' : '') + '</td>' +
+                '<td>' + (g.codigo ? '<span class="ev-chip ev-code">' + escHtml(g.codigo) + '</span>' : '') + '</td>' +
                 '<td class="wrap">' + escHtml(g.description) + '</td>' +
                 '<td>' + sevBadge(g.severity) + '</td>' +
                 '<td>' + (escHtml(g.type) || '-') + '</td>' +
@@ -1506,7 +1567,6 @@
     function setTheater(on, remember) {
         evalSplit.classList.toggle('theater', on);
         btnTheater.setAttribute('aria-pressed', on ? 'true' : 'false');
-        btnTheater.querySelector('i').className = on ? 'fas fa-compress' : 'fas fa-expand';
         btnTheater.querySelector('span').textContent = on ? 'Normal size' : 'Larger video';
         if (sidebarEl) {
             if (on) {

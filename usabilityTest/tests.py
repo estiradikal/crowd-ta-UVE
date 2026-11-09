@@ -232,6 +232,40 @@ class AnnotationSheetTests(TestCase):
             self.assertIn('<th>%s</th>' % col, body)
         self.assertIn('_mw-abc_', body)
         self.assertIn('Average occurrences per problem', body)
+        self.assertIn('/admin-panel/tabla-anotaciones/excel/', body)
+
+    def test_tabla_anotaciones_excel_has_one_sheet_per_tab(self):
+        from io import BytesIO
+        from django.utils import timezone
+        from openpyxl import load_workbook
+        self.add_annotation(self.p1, '00:10', '00:14')
+        self.evaluacion.fecha_inicio = self.evaluacion.fecha_inicio or timezone.now()
+        self.evaluacion.save()
+        otra = Evaluacion.objects.create(video_id='_mw-otro_.webm', payment_id='pay2', task_id='2')
+        Anotacion.objects.create(evaluacion=otra, start_time='00:01', indicador='ACT', contexto='Training',
+                                 problema='Otro problema')
+
+        resp = self.client.get('/admin-panel/tabla-anotaciones/excel/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('spreadsheetml', resp['Content-Type'])
+        self.assertIn('attachment;', resp['Content-Disposition'])
+        wb = load_workbook(BytesIO(resp.content))
+        self.assertEqual(wb.sheetnames,
+                         ['1. Annotation table', '2. Problem table', '3. Time annotation', 'Problem summary'])
+        anot = wb['1. Annotation table']
+        self.assertEqual([c.value for c in anot[1]],
+                         ['video_id', 'start_time', 'finish_time', 'indicator_code', 'task_moment', 'problem', 'comments'])
+        self.assertEqual(anot.max_row, 3)  # encabezado + 2 anotaciones
+        self.assertEqual([c.value for c in anot[2]][:5], ['_mw-abc_', '00:10', '00:14', 'DSF', 'Main task'])
+        self.assertEqual(wb['2. Problem table']['B2'].value, self.p1.codigo)
+        self.assertEqual(wb['3. Time annotation']['A2'].value, '_mw-abc_')
+        self.assertTrue(wb['Problem summary']['A1'].value.startswith('Video: _mw-abc_'))
+
+        # Con el filtro de video solo sale ese video
+        resp = self.client.get('/admin-panel/tabla-anotaciones/excel/?video=%d' % otra.id)
+        anot = load_workbook(BytesIO(resp.content))['1. Annotation table']
+        self.assertEqual(anot.max_row, 2)
+        self.assertEqual(anot['A2'].value, '_mw-otro_')
 
 
 class TimeAnnotationAndGuideTests(TestCase):

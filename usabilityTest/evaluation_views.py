@@ -1,7 +1,7 @@
 import os
 import json
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import FileResponse, Http404, JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.contrib.admin.views.decorators import staff_member_required as _staff_member_required
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
@@ -391,31 +391,33 @@ def crear_campana(request):
 
 
 @staff_member_required
-def reportes(request):
-    videos = get_uploaded_videos()
-    evaluaciones = Evaluacion.objects.filter(completada=True)
+def audio_report(request):
+    """Grabaciones .webm de cada worker/task, para escuchar su audio o descargarlas."""
+    grabaciones = get_uploaded_videos()
+    total = len(grabaciones)
 
-    total_anotaciones = 0
-    total_problemas = 0
-    for ev in evaluaciones:
-        total_anotaciones += ev.anotaciones.count() if hasattr(ev, 'anotaciones') else 0
-        total_problemas += ev.problemas.count() if hasattr(ev, 'problemas') else 0
+    busqueda = request.GET.get('q', '').strip()
+    if busqueda:
+        q = busqueda.lower()
+        grabaciones = [g for g in grabaciones
+                       if q in g['worker_id'].lower() or q in g['payment_id'].lower() or q in g['task_id'].lower()]
+
+    # Más recientes primero; dentro del mismo día, por worker y task
+    grabaciones.sort(key=lambda g: (g['worker_id'], g['task_id']))
+    grabaciones.sort(key=lambda g: g['date'], reverse=True)
 
     context = {
-        'active_page': 'reportes',
-        'total_evaluaciones': evaluaciones.count(),
-        'total_videos': len(videos),
-        'total_anotaciones': total_anotaciones,
-        'total_problemas': total_problemas,
-        'evaluaciones': evaluaciones,
+        'active_page': 'audio_report',
+        'grabaciones': grabaciones,
+        'total_grabaciones': total,
+        'busqueda': busqueda,
         'stats': get_stats(),
     }
-    return render(request, 'evaluation/reportes.html', context)
+    return render(request, 'evaluation/audio_report.html', context)
 
 
-@staff_member_required
-def tabla_anotaciones(request):
-    """Vista tipo Excel: 1. Annotation table, 2. Problem table y resumen de problemas por video."""
+def _datos_tabla_anotaciones(request):
+    """Datos de la Tabla de anotaciones (los usan la página y la descarga en Excel)."""
     evaluaciones = Evaluacion.objects.order_by('payment_id', 'task_id')
     seleccion = request.GET.get('video', '')
     if seleccion.isdigit():
@@ -456,17 +458,153 @@ def tabla_anotaciones(request):
     for ev in tiempos:
         ev.video = video_label(ev.video_id)
 
-    context = {
-        'active_page': 'tabla',
+    return {
         'anotaciones': anotaciones,
         'problemas': problemas,
         'resumen_videos': resumen_videos,
         'tiempos': tiempos,
-        'todas_evaluaciones': Evaluacion.objects.order_by('payment_id', 'task_id'),
         'seleccion': seleccion,
-        'stats': get_stats(),
     }
+
+
+@staff_member_required
+def tabla_anotaciones(request):
+    """Vista tipo Excel: 1. Annotation table, 2. Problem table y resumen de problemas por video."""
+    context = _datos_tabla_anotaciones(request)
+    context.update({
+        'active_page': 'tabla',
+        'todas_evaluaciones': Evaluacion.objects.order_by('payment_id', 'task_id'),
+        'stats': get_stats(),
+    })
     return render(request, 'evaluation/tabla_anotaciones.html', context)
+
+
+@staff_member_required
+def tabla_anotaciones_excel(request):
+    """Descarga la Tabla de anotaciones en .xlsx, con una hoja por cada pestaña de la página.
+    Respeta el filtro de video (?video=<id>)."""
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+    from openpyxl.utils import get_column_letter
+
+    datos = _datos_tabla_anotaciones(request)
+
+    head_font = Font(bold=True, color='FFFFFF')
+    head_fill = PatternFill('solid', fgColor='2563EB')
+    title_font = Font(bold=True, size=12)
+    muted_font = Font(color='6B7280')
+    thin = Side(style='thin', color='E5E7EB')
+    cell_border = Border(bottom=thin)
+    wrap = Alignment(wrap_text=True, vertical='top')
+    top = Alignment(vertical='top')
+
+    def write_header(ws, row, headers):
+        for col, title in enumerate(headers, start=1):
+            c = ws.cell(row=row, column=col, value=title)
+            c.font = head_font
+            c.fill = head_fill
+            c.alignment = Alignment(vertical='center')
+
+    def write_rows(ws, start_row, rows, wrap_cols=()):
+        r = start_row
+        for values in rows:
+            for col, value in enumerate(values, start=1):
+                c = ws.cell(row=r, column=col, value=value)
+                c.border = cell_border
+                c.alignment = wrap if col in wrap_cols else top
+            r += 1
+        return r
+
+    def set_widths(ws, widths):
+        for col, width in enumerate(widths, start=1):
+            ws.column_dimensions[get_column_letter(col)].width = width
+
+    def local(dt):
+        return timezone.localtime(dt).replace(tzinfo=None) if dt else None
+
+    def table_sheet(ws, headers, rows, widths, wrap_cols=(), empty='No data yet.'):
+        write_header(ws, 1, headers)
+        if rows:
+            last = write_rows(ws, 2, rows, wrap_cols)
+            ws.auto_filter.ref = 'A1:%s%d' % (get_column_letter(len(headers)), last - 1)
+        else:
+            ws.cell(row=2, column=1, value=empty).font = muted_font
+        ws.freeze_panes = 'A2'
+        set_widths(ws, widths)
+
+    wb = Workbook()
+
+    # 1. Annotation table (mismas columnas que la página)
+    ws = wb.active
+    ws.title = '1. Annotation table'
+    table_sheet(ws,
+                ['video_id', 'start_time', 'finish_time', 'indicator_code', 'task_moment', 'problem', 'comments'],
+                [[a.video, a.start_time, a.finish_time, a.indicador, a.contexto, a.problema, a.comentarios]
+                 for a in datos['anotaciones']],
+                [34, 11, 11, 15, 24, 44, 44], wrap_cols=(6, 7), empty='No annotations yet.')
+
+    # 2. Problem table
+    ws = wb.create_sheet('2. Problem table')
+    table_sheet(ws,
+                ['video_id', 'code', 'problem', 'severity', 'type', 'comment'],
+                [[p.video, p.problema.codigo, p.problema.descripcion, p.severidad, p.tipo, p.comentarios]
+                 for p in datos['problemas']],
+                [34, 11, 44, 12, 15, 44], wrap_cols=(3, 6), empty='No problems registered yet.')
+
+    # 3. Time annotation
+    ws = wb.create_sheet('3. Time annotation')
+    table_sheet(ws,
+                ['video_id', 'annotation_start_time', 'annotation_finish_time', 'duration', 'active_time', 'evaluator'],
+                [[ev.video, local(ev.fecha_inicio), local(ev.fecha_fin) or 'In progress',
+                  ev.duracion_texto or '-', ev.tiempo_activo_texto, ev.evaluador or '-']
+                 for ev in datos['tiempos']],
+                [34, 22, 22, 12, 12, 18], empty='No video has been opened for evaluation yet.')
+    for cells in ws.iter_rows(min_row=2, min_col=2, max_col=3):
+        for c in cells:
+            if c.value and not isinstance(c.value, str):
+                c.number_format = 'yyyy-mm-dd hh:mm'
+
+    # Problem summary: un bloque por video, como las tarjetas de la página
+    ws = wb.create_sheet('Problem summary')
+    headers = ['code', 'problem', 'severity', 'type', 'occurrences', '% of annotations', 'avg duration (s)']
+    row = 1
+    if not datos['resumen_videos']:
+        ws.cell(row=1, column=1, value='No annotations yet.').font = muted_font
+    for r in datos['resumen_videos']:
+        ws.cell(row=row, column=1, value='Video: %s \u00b7 Task %s' % (r['video'], r['evaluacion'].task_id)).font = title_font
+        row += 1
+        t = r['totales']
+        for label, value in (('Annotations', t['anotaciones']),
+                             ('Distinct problems', t['problemas_distintos']),
+                             ('Average occurrences per problem', t['promedio_por_problema'])):
+            ws.cell(row=row, column=1, value=label).font = muted_font
+            ws.cell(row=row, column=2, value=value)
+            row += 1
+        write_header(ws, row, headers)
+        first = row + 1
+        row = write_rows(ws, first, [
+            [f['codigo'], f['descripcion'], f['severidad'] or '-', f['tipo'] or '-', f['ocurrencias'],
+             (f['porcentaje'] or 0) / 100.0,
+             f['duracion_promedio'] if f['duracion_promedio'] is not None else '-']
+            for f in r['filas']], wrap_cols=(2,))
+        for cells in ws.iter_rows(min_row=first, max_row=row - 1, min_col=6, max_col=6):
+            cells[0].number_format = '0.0%'
+        row += 1  # línea en blanco entre videos
+    set_widths(ws, [14, 44, 12, 15, 13, 17, 17])
+
+    output = BytesIO()
+    wb.save(output)
+    nombre = 'annotation_table'
+    if datos['seleccion']:
+        videos = [ev.video for ev in datos['tiempos']] or [a.video for a in datos['anotaciones']]
+        if videos:
+            nombre += '_' + videos[0][:40]
+    nombre += '_%s.xlsx' % timezone.localdate().isoformat()
+    response = HttpResponse(output.getvalue(),
+                            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="%s"' % nombre
+    return response
 
 
 @staff_member_required
@@ -567,14 +705,19 @@ def config_panel(request):
 
 @staff_member_required
 def serve_video(request, payment_id, task_id, date_folder, filename):
-    base_dir = os.path.join(os.path.dirname(__file__), 'uploads')
-    filepath = os.path.join(base_dir, payment_id, task_id, date_folder, filename)
+    base_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), 'uploads'))
+    filepath = os.path.realpath(os.path.join(base_dir, payment_id, task_id, date_folder, filename))
 
-    if not os.path.exists(filepath):
+    # Evita salir de la carpeta uploads con rutas tipo ".."
+    if not filepath.startswith(base_dir + os.sep) or not os.path.isfile(filepath):
         raise Http404("Video not found")
 
-    response = FileResponse(open(filepath, 'rb'), content_type='video/webm')
-    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    # ?download=1 -> descarga el archivo; si no, se reproduce en el navegador
+    descargar = request.GET.get('download') == '1'
+    response = FileResponse(open(filepath, 'rb'), content_type='video/webm',
+                            as_attachment=descargar, filename=filename)
+    if not descargar:
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
     return response
 
 

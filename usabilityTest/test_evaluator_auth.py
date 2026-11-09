@@ -131,7 +131,7 @@ class PanelSettingsTests(TestCase):
         self.save(language='de')
         self.assertContains(self.client.get('/admin-panel/videos/'), 'Videoliste')
         self.save(language='fr')
-        self.assertContains(self.client.get('/admin-panel/reportes/'), 'Rapports')
+        self.assertContains(self.client.get('/admin-panel/audio-report/'), 'Rapport audio')
 
     def test_rejects_unknown_language_and_color(self):
         self.client.get('/admin-panel/config/')

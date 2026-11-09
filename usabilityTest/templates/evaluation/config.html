@@ -17,10 +17,10 @@
         <div class="hero-info">
             <h2>{{ user.get_full_name|default:user.username }}</h2>
             <div class="hero-meta">
-                <span class="hero-chip"><i class="fas fa-user-check"></i>
+                <span class="hero-chip"><svg class="ico" aria-hidden="true"><use href="#i-user-check"/></svg>
                     {% if user.is_superuser %}{% t "Admin" %}{% else %}{% t profile.get_role_display %}{% endif %}</span>
-                <span><i class="fas fa-at"></i> {{ user.username }}</span>
-                {% if user.email %}<span><i class="fas fa-envelope"></i> {{ user.email }}</span>{% endif %}
+                <span><svg class="ico" aria-hidden="true"><use href="#i-at"/></svg> {{ user.username }}</span>
+                {% if user.email %}<span><svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg> {{ user.email }}</span>{% endif %}
             </div>
         </div>
     </header>
@@ -32,15 +32,15 @@
         <!-- ===== Pestañas ===== -->
         <nav class="settings-tabs" role="tablist" aria-label="{% t 'Settings' %}">
             <button type="button" role="tab" data-tab="account" class="settings-tab">
-                <i class="fas fa-user-cog"></i>
+                <svg class="ico" aria-hidden="true"><use href="#i-user"/></svg>
                 <span><strong>{% t "My account" %}</strong><small>{% t "Photo, personal data and password" %}</small></span>
             </button>
             <button type="button" role="tab" data-tab="preferences" class="settings-tab">
-                <i class="fas fa-sliders-h"></i>
+                <svg class="ico" aria-hidden="true"><use href="#i-settings"/></svg>
                 <span><strong>{% t "Preferences" %}</strong><small>{% t "Language, color and appearance" %}</small></span>
             </button>
             <button type="button" role="tab" data-tab="shortcuts" class="settings-tab">
-                <i class="fas fa-keyboard"></i>
+                <svg class="ico" aria-hidden="true"><use href="#i-keyboard"/></svg>
                 <span><strong>{% t "Keyboard shortcuts" %}</strong><small>{% t "Keys for the Evaluate page" %}</small></span>
             </button>
         </nav>
@@ -51,7 +51,7 @@
             <section class="settings-panel" data-panel="account" role="tabpanel">
                 <div class="settings-card">
                     <div class="settings-head">
-                        <h4><i class="fas fa-user-circle"></i> {% t "Profile picture" %}</h4>
+                        <h4><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg> {% t "Profile picture" %}</h4>
                         <p>{% t "Choose an avatar or upload your own photo." %}</p>
                     </div>
                     <div class="avatar-block">
@@ -60,9 +60,9 @@
                             <img id="avatarPreviewImg" alt=""{% if profile.image_url %} src="{{ profile.image_url }}"{% endif %}>
                         </div>
                         <div class="avatar-actions">
-                            <button type="button" class="btn-ghost" id="btnShuffle"><i class="fas fa-random"></i> {% t "Other avatars" %}</button>
+                            <button type="button" class="btn-ghost" id="btnShuffle"><svg class="ico" aria-hidden="true"><use href="#i-shuffle"/></svg> {% t "Other avatars" %}</button>
                             <label class="btn-ghost">
-                                <i class="fas fa-upload"></i> {% t "Upload photo" %}
+                                <svg class="ico" aria-hidden="true"><use href="#i-upload"/></svg> {% t "Upload photo" %}
                                 <input type="file" name="photo" id="photoInput" accept="image/*" hidden>
                             </label>
                         </div>
@@ -75,7 +75,7 @@
 
                 <div class="settings-card">
                     <div class="settings-head">
-                        <h4><i class="fas fa-id-card"></i> {% t "Personal information" %}</h4>
+                        <h4><svg class="ico" aria-hidden="true"><use href="#i-id"/></svg> {% t "Personal information" %}</h4>
                         <p>{% t "This is how other evaluators see you in the panel." %}</p>
                     </div>
                     <div class="settings-grid">
@@ -91,18 +91,18 @@
                         </label>
                         <label class="s-field s-span-2">
                             <span>{% t "Email" %}</span>
-                            <div class="s-input-icon"><i class="fas fa-envelope"></i>
+                            <div class="s-input-icon"><svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg>
                                 <input type="email" name="email" value="{{ account_form.email.value|default:'' }}">
                             </div>
                             {% for e in account_form.email.errors %}<small class="form-error">{{ e }}</small>{% endfor %}
                         </label>
                         <div class="s-field">
                             <span>{% t "Username" %}</span>
-                            <div class="s-readonly"><i class="fas fa-at"></i> {{ user.username }} <i class="fas fa-lock s-lock" title="{% t 'The username cannot be changed.' %}"></i></div>
+                            <div class="s-readonly"><svg class="ico" aria-hidden="true"><use href="#i-at"/></svg> {{ user.username }} <svg class="ico s-lock" aria-hidden="true" title="{% t 'The username cannot be changed.' %}"><use href="#i-lock"/></svg></div>
                         </div>
                         <div class="s-field">
                             <span>{% t "Role" %}</span>
-                            <div class="s-readonly"><i class="fas fa-user-check"></i>
+                            <div class="s-readonly"><svg class="ico" aria-hidden="true"><use href="#i-user-check"/></svg>
                                 {% if user.is_superuser %}{% t "Admin" %}{% else %}{% t profile.get_role_display %}{% endif %}</div>
                         </div>
                     </div>
@@ -110,33 +110,33 @@
 
                 <div class="settings-card">
                     <div class="settings-head">
-                        <h4><i class="fas fa-key"></i> {% t "Change password" %}</h4>
+                        <h4><svg class="ico" aria-hidden="true"><use href="#i-key"/></svg> {% t "Change password" %}</h4>
                         <p>{% t "Leave these fields empty if you don't want to change it." %}</p>
                     </div>
                     {% for e in password_form.non_field_errors %}<div class="s-alert">{{ e }}</div>{% endfor %}
                     <div class="settings-grid">
                         <label class="s-field s-span-2">
                             <span>{% t "Current password" %}</span>
-                            <div class="s-input-icon s-pass"><i class="fas fa-lock"></i>
+                            <div class="s-input-icon s-pass"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>
                                 <input type="password" name="old_password" autocomplete="current-password">
-                                <button type="button" class="s-eye" aria-label="Show"><i class="fas fa-eye"></i></button>
+                                <button type="button" class="s-eye" aria-label="Show"><svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg></button>
                             </div>
                             {% for e in password_form.old_password.errors %}<small class="form-error">{{ e }}</small>{% endfor %}
                         </label>
                         <label class="s-field">
                             <span>{% t "New password" %}</span>
-                            <div class="s-input-icon s-pass"><i class="fas fa-key"></i>
+                            <div class="s-input-icon s-pass"><svg class="ico" aria-hidden="true"><use href="#i-key"/></svg>
                                 <input type="password" name="new_password1" id="newPassword" autocomplete="new-password">
-                                <button type="button" class="s-eye" aria-label="Show"><i class="fas fa-eye"></i></button>
+                                <button type="button" class="s-eye" aria-label="Show"><svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg></button>
                             </div>
                             <div class="strength" id="strength"><span></span><span></span><span></span><span></span></div>
                             {% for e in password_form.new_password1.errors %}<small class="form-error">{{ e }}</small>{% endfor %}
                         </label>
                         <label class="s-field">
                             <span>{% t "Confirm new password" %}</span>
-                            <div class="s-input-icon s-pass"><i class="fas fa-check-double"></i>
+                            <div class="s-input-icon s-pass"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>
                                 <input type="password" name="new_password2" autocomplete="new-password">
-                                <button type="button" class="s-eye" aria-label="Show"><i class="fas fa-eye"></i></button>
+                                <button type="button" class="s-eye" aria-label="Show"><svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg></button>
                             </div>
                             {% for e in password_form.new_password2.errors %}<small class="form-error">{{ e }}</small>{% endfor %}
                         </label>
@@ -148,14 +148,14 @@
             <section class="settings-panel" data-panel="preferences" role="tabpanel">
                 <div class="settings-card">
                     <div class="settings-head">
-                        <h4><i class="fas fa-language"></i> {% t "Language" %}</h4>
+                        <h4><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg> {% t "Language" %}</h4>
                         <p>{% t "Choose the language of the panel." %}</p>
                     </div>
                     <div class="choice-grid">
                         {% for code, name, flag in languages %}
                         <label class="choice-tile">
                             <input type="radio" name="language" value="{{ code }}" {% if preferences_form.language.value == code %}checked{% endif %}>
-                            <span class="choice-body"><span class="choice-flag">{{ flag }}</span> {{ name }}<i class="fas fa-check-circle choice-check"></i></span>
+                            <span class="choice-body"><span class="choice-flag">{{ flag }}</span> {{ name }}<svg class="ico choice-check" aria-hidden="true"><use href="#i-check-circle"/></svg></span>
                         </label>
                         {% endfor %}
                     </div>
@@ -163,7 +163,7 @@
 
                 <div class="settings-card">
                     <div class="settings-head">
-                        <h4><i class="fas fa-palette"></i> {% t "Accent color" %}</h4>
+                        <h4><svg class="ico" aria-hidden="true"><use href="#i-palette"/></svg> {% t "Accent color" %}</h4>
                         <p>{% t "Choose the main color of the panel." %}</p>
                     </div>
                     <div class="swatch-grid">
@@ -171,7 +171,7 @@
                         <label class="swatch" title="{% t color.name %}">
                             <input type="radio" name="accent_color" value="{{ color.key }}" data-style="{{ color.style }}"
                                    {% if preferences_form.accent_color.value == color.key %}checked{% endif %}>
-                            <span class="swatch-dot" style="background: {{ color.light }}"><i class="fas fa-check"></i></span>
+                            <span class="swatch-dot" style="background: {{ color.light }}"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg></span>
                             <span class="swatch-name">{% t color.name %}</span>
                         </label>
                         {% endfor %}
@@ -179,7 +179,7 @@
                     <div class="accent-preview" aria-hidden="true">
                         <span class="ap-label">{% t "Preview" %}</span>
                         <span class="btn btn-primary btn-sm">{% t "Evaluate" %}</span>
-                        <span class="btn btn-outline-primary btn-sm">{% t "View Reports" %}</span>
+                        <span class="btn btn-outline-primary btn-sm">{% t "View Audio Report" %}</span>
                         <span class="ap-chip">{% t "In Progress" %}</span>
                         <span class="ap-bar"><span></span></span>
                     </div>
@@ -187,24 +187,24 @@
 
                 <div class="settings-card">
                     <div class="settings-head">
-                        <h4><i class="fas fa-adjust"></i> {% t "Appearance" %}</h4>
+                        <h4><svg class="ico" aria-hidden="true"><use href="#i-contrast"/></svg> {% t "Appearance" %}</h4>
                         <p>{% t "Applied right away and saved on this device." %}</p>
                     </div>
                     <div class="theme-grid">
                         <label class="theme-tile">
                             <input type="radio" name="theme_mode" value="light">
                             <span class="theme-thumb thumb-light"><i></i><b></b><b></b></span>
-                            <span class="theme-name"><i class="fas fa-sun"></i> {% t "Light" %}</span>
+                            <span class="theme-name"><svg class="ico" aria-hidden="true"><use href="#i-sun"/></svg> {% t "Light" %}</span>
                         </label>
                         <label class="theme-tile">
                             <input type="radio" name="theme_mode" value="dark">
                             <span class="theme-thumb thumb-dark"><i></i><b></b><b></b></span>
-                            <span class="theme-name"><i class="fas fa-moon"></i> {% t "Dark" %}</span>
+                            <span class="theme-name"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg> {% t "Dark" %}</span>
                         </label>
                         <label class="theme-tile">
                             <input type="radio" name="theme_mode" value="system">
                             <span class="theme-thumb thumb-system"><i></i><b></b><b></b></span>
-                            <span class="theme-name"><i class="fas fa-desktop"></i> {% t "System" %}</span>
+                            <span class="theme-name"><svg class="ico" aria-hidden="true"><use href="#i-monitor"/></svg> {% t "System" %}</span>
                         </label>
                     </div>
                 </div>
@@ -215,7 +215,7 @@
                 <div class="settings-card">
                     <div class="settings-head with-toggle">
                         <div>
-                            <h4><i class="fas fa-keyboard"></i> {% t "Keyboard shortcuts" %}</h4>
+                            <h4><svg class="ico" aria-hidden="true"><use href="#i-keyboard"/></svg> {% t "Keyboard shortcuts" %}</h4>
                             <p>{% t "Work faster on the Evaluate page. Shortcuts are ignored while you type in a field." %}</p>
                         </div>
                         <label class="switch" title="{% t 'Enable keyboard shortcuts' %}">
@@ -235,14 +235,14 @@
                                 {% for e in row.errors %}<small class="form-error">{% t e %}</small>{% endfor %}
                             </span>
                             <kbd class="sc-key">{{ row.label }}</kbd>
-                            <button type="button" class="btn-ghost sc-change"><i class="fas fa-pen"></i> <span>{% t "Change" %}</span></button>
+                            <button type="button" class="btn-ghost sc-change"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg> <span>{% t "Change" %}</span></button>
                             <input type="hidden" name="key_{{ row.action }}" value="{{ row.key }}">
                         </li>
                         {% endfor %}
                     </ul>
                     <p class="sc-status" id="scStatus" role="status" aria-live="polite"></p>
                     <div class="settings-actions">
-                        <button type="button" class="btn-ghost" id="btnResetShortcuts"><i class="fas fa-undo"></i> {% t "Restore defaults" %}</button>
+                        <button type="button" class="btn-ghost" id="btnResetShortcuts"><svg class="ico" aria-hidden="true"><use href="#i-undo"/></svg> {% t "Restore defaults" %}</button>
                     </div>
                 </div>
             </section>
@@ -250,11 +250,11 @@
             <!-- ===== Barra de guardado (guarda las tres pestañas) ===== -->
             <div class="save-bar" id="saveBar">
                 <span class="save-state">
-                    <i class="fas fa-circle"></i>
+                    <span class="save-dot"></span>
                     <span class="save-clean">{% t "Everything is saved" %}</span>
                     <span class="save-dirty">{% t "You have unsaved changes" %}</span>
                 </span>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> {% t "Save changes" %}</button>
+                <button type="submit" class="btn btn-primary"><svg class="ico" aria-hidden="true"><use href="#i-save"/></svg> {% t "Save changes" %}</button>
             </div>
         </div>
     </form>
@@ -339,7 +339,7 @@
             var input = btn.parentElement.querySelector('input');
             var show = input.type === 'password';
             input.type = show ? 'text' : 'password';
-            btn.innerHTML = '<i class="fas fa-eye' + (show ? '-slash' : '') + '"></i>';
+            btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-eye' + (show ? '-off' : '') + '"/></svg>';
         });
     });
     var strength = document.getElementById('strength');
@@ -376,8 +376,6 @@
             } catch (e) {}
             var dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
             if (dark) root.setAttribute('data-theme', 'dark'); else root.removeAttribute('data-theme');
-            var icon = document.querySelector('#btnTheme i');
-            if (icon) icon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
         });
     });
 
