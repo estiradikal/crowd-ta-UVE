@@ -9,8 +9,25 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="/static/css/panel_auth.css?v={{ asset_v }}">
+    <script>
+        /* Aplica el tema guardado antes de pintar, para evitar un parpadeo blanco */
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem('authTheme'); } catch (e) {}
+            if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
 </head>
 <body>
+<!-- Efecto de rastro de píxeles en el fondo blanco (sigue al cursor) -->
+<div id="pixelTrail" class="pixel-trail-bg" aria-hidden="true"></div>
+
+<!-- Botón de modo claro / oscuro -->
+<button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+    <i class="fas fa-moon icon-moon"></i>
+    <i class="fas fa-sun icon-sun"></i>
+</button>
 <main class="auth-page">
     <div class="auth-shell {% if mode == 'signup' %}signup-active{% endif %}" id="authShell">
 
@@ -19,7 +36,7 @@
             <form method="post" action="/admin-panel/login/" novalidate>
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ next }}">
-                <div class="brand"><i class="fas fa-clipboard-check"></i> Evaluation Panel</div>
+                <div class="brand">EVALUATION PANEL</div>
                 <h1 id="loginTitle">Log in</h1>
                 <p class="subtitle">Enter your credentials to access the panel.</p>
 
@@ -141,8 +158,28 @@
 </main>
 
 <script src="/static/js/avatar_picker.js?v={{ asset_v }}"></script>
+<script src="/static/js/pixel_trail.js?v={{ asset_v }}"></script>
 <script>
 (function () {
+    var root = document.documentElement;
+    document.getElementById('themeToggle').addEventListener('click', function () {
+        var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        try { localStorage.setItem('authTheme', next); } catch (e) {}
+    });
+
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        initPixelTrail(document.getElementById('pixelTrail'), {
+            gridSize: 50,
+            trailSize: 0.1,
+            maxAge: 500,
+            interpolate: 5,
+            color: '#60a5fa',
+            trailColor: '#93c5fd',
+            gooeyFilter: { strength: 2 }
+        });
+    }
+
     var shell = document.getElementById('authShell');
     document.querySelectorAll('[data-go]').forEach(function (btn) {
         btn.addEventListener('click', function () {
