@@ -4,31 +4,34 @@
 {% block title %}{% t "Campaigns" %} - {% t "Admin Panel" %}{% endblock %}
 
 {% block content %}
-<div class="videos-list">
-    <h2>{% t "Campaigns" %}</h2>
-    <p class="text-muted">{% t "Campaigns are registered automatically when a participant opens the test link with a campaign ID." %}</p>
+<div class="videos-list campaigns-page">
+    <header class="vl-header">
+        <h2>{% t "Campaigns" %}</h2>
+        <p class="vl-subtitle">{% t "Campaigns are registered automatically when a participant opens the test link with a campaign ID." %}</p>
+    </header>
 
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <div class="btn-group">
-                <a href="?filtro=todos&q={{ busqueda|urlencode }}" class="btn btn-outline-secondary {% if filtro == 'todos' %}active{% endif %}">{% t "All" %}</a>
-                <a href="?filtro=pendientes&q={{ busqueda|urlencode }}" class="btn btn-outline-secondary {% if filtro == 'pendientes' %}active{% endif %}">{% t "Pending" %}</a>
-                <a href="?filtro=en_progreso&q={{ busqueda|urlencode }}" class="btn btn-outline-secondary {% if filtro == 'en_progreso' %}active{% endif %}">{% t "In Progress" %}</a>
-                <a href="?filtro=completadas&q={{ busqueda|urlencode }}" class="btn btn-outline-secondary {% if filtro == 'completadas' %}active{% endif %}">{% t "Completed" %}</a>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <form class="form-inline justify-content-end">
-                <input type="text" name="q" class="form-control mr-2" style="min-width: 270px" placeholder="{% t 'Search by campaign or Worker ID...' %}" value="{{ busqueda }}">
-                <input type="hidden" name="filtro" value="{{ filtro }}">
-                <button type="submit" class="btn btn-primary">{% t "Search" %}</button>
-            </form>
-        </div>
+    <div class="vl-toolbar">
+        <nav class="vl-segmented" aria-label="{% t 'Status' %}">
+            <a href="?filtro=todos&q={{ busqueda|urlencode }}" class="{% if filtro == 'todos' %}active{% endif %}">{% t "All" %}</a>
+            <a href="?filtro=pendientes&q={{ busqueda|urlencode }}" class="{% if filtro == 'pendientes' %}active{% endif %}">
+                <span class="vl-dot dot-pending"></span>{% t "Pending" %}</a>
+            <a href="?filtro=en_progreso&q={{ busqueda|urlencode }}" class="{% if filtro == 'en_progreso' %}active{% endif %}">
+                <span class="vl-dot dot-progress"></span>{% t "In Progress" %}</a>
+            <a href="?filtro=completadas&q={{ busqueda|urlencode }}" class="{% if filtro == 'completadas' %}active{% endif %}">
+                <span class="vl-dot dot-done"></span>{% t "Completed" %}</a>
+        </nav>
+
+        <form class="vl-search">
+            <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+            <input type="text" name="q" class="vl-search-wide" placeholder="{% t 'Search by campaign or Worker ID...' %}" value="{{ busqueda }}" aria-label="{% t 'Search by campaign or Worker ID...' %}">
+            <input type="hidden" name="filtro" value="{{ filtro }}">
+            <button type="submit">{% t "Search" %}</button>
+        </form>
     </div>
 
-    <div class="admin-table-wrap">
-    <table class="table table-striped table-hover">
-        <thead class="thead-dark">
+    <div class="admin-table-wrap vl-table-wrap">
+    <table class="table vl-table">
+        <thead>
             <tr>
                 <th>{% t "Campaign" %}</th>
                 <th>{% t "Worker ID" %}</th>
@@ -42,38 +45,51 @@
             {% for video in videos %}
             <tr>
                 <td>
-                    <strong>{{ video.camp_id }}</strong>
-                    <button type="button" class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" data-copy="{{ video.camp_id }}"><i class="fas fa-copy" aria-hidden="true"></i></button>
+                    <div class="vl-id">
+                        <span class="vl-camp-id">
+                            <svg class="ico" aria-hidden="true"><use href="#i-campaign"/></svg>{{ video.camp_id }}
+                        </span>
+                        <button type="button" class="copy-btn vl-copy" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" data-copy="{{ video.camp_id }}"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg></button>
+                    </div>
                 </td>
                 <td>
-                    <span class="file-name" title="{{ video.worker_id }}">{{ video.worker_id }}</span>
-                    <button type="button" class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" data-copy="{{ video.worker_id }}"><i class="fas fa-copy" aria-hidden="true"></i></button>
+                    <div class="vl-id">
+                        <span class="file-name" title="{{ video.worker_id }}">{{ video.worker_id }}</span>
+                        <button type="button" class="copy-btn vl-copy" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" data-copy="{{ video.worker_id }}"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg></button>
+                    </div>
                 </td>
                 {% if video.sin_video %}
-                <td class="text-muted">—</td>
-                <td class="text-muted">—</td>
-                <td class="text-muted"><i class="fas fa-video-slash mr-1"></i> {% t "No videos uploaded yet" %}</td>
+                <td class="vl-none">—</td>
+                <td class="vl-none">—</td>
+                <td class="vl-none">
+                    <span class="vl-novideo"><svg class="ico" aria-hidden="true"><use href="#i-video"/></svg>{% t "No videos uploaded yet" %}</span>
+                </td>
                 {% else %}
-                <td>{{ video.task_id }}</td>
-                <td class="text-nowrap">{{ video.date }}</td>
+                <td><span class="vl-task">{{ video.task_id }}</span></td>
+                <td class="vl-mono text-nowrap">{{ video.date }}</td>
                 <td>
-                    <span class="file-name" title="{{ video.filename|slice:"1:-5" }}">{{ video.filename|slice:"1:-5" }}</span>
-                    <button type="button" class="btn btn-sm btn-outline-secondary copy-btn ml-2" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" data-copy="{{ video.filename|slice:"1:-5" }}"><i class="fas fa-copy" aria-hidden="true"></i></button>
+                    <div class="vl-id">
+                        <span class="file-name vl-mono" title="{{ video.filename|slice:"1:-5" }}">{{ video.filename|slice:"1:-5" }}</span>
+                        <button type="button" class="copy-btn vl-copy" title="{% t 'Copy' %}" aria-label="{% t 'Copy' %}" data-copy="{{ video.filename|slice:"1:-5" }}"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg></button>
+                    </div>
                 </td>
                 {% endif %}
                 <td>
                     {% if video.evaluada %}
-                        <span class="status-badge status-completada"><i class="fas fa-check-circle"></i> {% t "Completed" %}</span>
+                        <span class="vl-status st-done status-completada"><span class="vl-dot"></span>{% t "Completed" %}</span>
                     {% elif video.en_progreso %}
-                        <span class="status-badge status-progreso"><i class="fas fa-hourglass-half"></i> {% t "In Progress" %}</span>
+                        <span class="vl-status st-progress status-progreso"><span class="vl-dot"></span>{% t "In Progress" %}</span>
                     {% else %}
-                        <span class="status-badge status-pendiente"><i class="fas fa-clock"></i> {% t "Pending" %}</span>
+                        <span class="vl-status st-pending status-pendiente"><span class="vl-dot"></span>{% t "Pending" %}</span>
                     {% endif %}
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" class="text-center text-muted py-4">{% t "No campaigns registered" %}</td>
+                <td colspan="6" class="vl-empty">
+                    <svg class="ico" aria-hidden="true"><use href="#i-campaign"/></svg>
+                    {% t "No campaigns registered" %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>

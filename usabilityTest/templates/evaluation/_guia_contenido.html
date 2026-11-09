@@ -1,129 +1,200 @@
-{# Evaluation guide content. Used by the full guide page and by the side panel (base_admin.html). #}
-{# Source: annexes A1-A5 of VideoAnnoation_UsabilityProblems_Public.xlsx #}
+{# Contenido de la guía de evaluación. Lo usan la página completa y el panel lateral (base_admin.html). #}
+{# El buscador del panel filtra por .guide-item y los botones saltan a cada data-guide-section. #}
 <div class="guide-content">
 
+<!-- En pocas palabras -->
+<div class="guide-intro guide-item">
+    <p class="guide-intro-title">In short</p>
+    <p>You watch a recording of a worker doing a task. Every time the worker <strong>has trouble</strong>, you write down
+       <strong>when</strong> it happened, <strong>what</strong> you saw and <strong>why</strong> it was a problem.</p>
+    <ol class="guide-flow">
+        <li><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg><span>Watch</span></li>
+        <li><svg class="ico" aria-hidden="true"><use href="#i-flag"/></svg><span>Mark the moment</span></li>
+        <li><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span>Pick what you saw</span></li>
+        <li><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg><span>Describe the problem</span></li>
+    </ol>
+</div>
+
+<!-- 1. Cómo evaluar -->
 <section class="guide-section" data-guide-section="workflow">
     <h4><span class="guide-num">1</span> How to evaluate a video</h4>
     <ol class="guide-steps">
-        <li class="guide-item">Open <strong>Videos</strong> and click <strong>Evaluate</strong>. The annotation timer starts and only counts while the page is visible.</li>
-        <li class="guide-item">Play the video. Press <kbd>S</kbd> when you see an indicator to set the <strong>Start Time</strong>, and <kbd>E</kbd> when it finishes to set the <strong>End Time</strong> (End is optional for instant events).</li>
-        <li class="guide-item">Choose the <strong>problem</strong>: type to filter the list, or pick <strong>Create new problem</strong> to register it with its severity and type.</li>
-        <li class="guide-item">Choose the <strong>indicator</strong> and the <strong>task moment</strong>, add comments if needed, and click <strong>Save Annotation</strong>.</li>
-        <li class="guide-item">Check your work in the <strong>1. Annotation table</strong>, <strong>2. Problem table</strong> and <strong>Problem summary</strong> tabs. Use <i class="fas fa-pen"></i> to fix a mistake.</li>
-        <li class="guide-item">When done, click <strong>Finish Evaluation</strong>. This records the finish time in <strong>3. Time annotation</strong>.</li>
+        <li class="guide-item">
+            <strong>Open the video.</strong>
+            <span>Go to <b>Videos</b> and click <b>Evaluate</b>. A timer starts; it only counts while the page is open.</span>
+        </li>
+        <li class="guide-item">
+            <strong>Mark when the trouble starts and ends.</strong>
+            <span>Press <kbd>{{ panel_shortcut_labels.mark_start }}</kbd> at the start and <kbd>{{ panel_shortcut_labels.mark_end }}</kbd> at the end. If it was instant, you only need the start.</span>
+        </li>
+        <li class="guide-item">
+            <strong>Choose the problem.</strong>
+            <span>Type to find it in the list. If it is new, pick <b>Create new problem</b> and give it a severity and a type.</span>
+        </li>
+        <li class="guide-item">
+            <strong>Say what you saw and where.</strong>
+            <span>Pick the <b>indicator</b> (what the worker did or said) and the <b>task moment</b> (which part of the task). Add a comment if it helps.</span>
+        </li>
+        <li class="guide-item">
+            <strong>Save and review.</strong>
+            <span>Click <b>Save Annotation</b>. You can check and fix everything in the tables below the video with the <svg class="ico ico-inline" aria-hidden="true"><use href="#i-pencil"/></svg> button.</span>
+        </li>
+        <li class="guide-item">
+            <strong>Finish.</strong>
+            <span>When you are done with the whole video, click <b>Finish Evaluation</b>.</span>
+        </li>
     </ol>
-    <p class="guide-tip"><i class="fas fa-lightbulb"></i> Press <kbd>?</kbd> anywhere in the panel to open this guide without leaving the video.</p>
-
-    <section class="guide-section" data-guide-section="shortcuts">
-        <h6 class="guide-subhead">Keyboard shortcuts (Evaluate tab)</h6>
-        <dl class="guide-defs">
-            <div class="guide-item"><dt><kbd>{{ panel_shortcut_labels.mark_start }}</kbd> Mark start</dt><dd>Sets the annotation <strong>Start Time</strong> to the current video time.</dd></div>
-            <div class="guide-item"><dt><kbd>{{ panel_shortcut_labels.mark_end }}</kbd> Mark end</dt><dd>Sets the annotation <strong>End Time</strong> to the current video time.</dd></div>
-            <div class="guide-item"><dt><kbd>{{ panel_shortcut_labels.play_pause }}</kbd> Play / pause</dt><dd>Plays or pauses the video. Pause first if you need an exact second.</dd></div>
-            <div class="guide-item"><dt><kbd>{{ panel_shortcut_labels.rewind }}</kbd> / <kbd>{{ panel_shortcut_labels.forward }}</kbd> Move 5 seconds</dt><dd>Moves the video 5 seconds back or forward.</dd></div>
-            <div class="guide-item"><dt><kbd>{{ panel_shortcut_labels.toggle_guide }}</kbd> Guide</dt><dd>Opens or closes this guide.</dd></div>
-        </dl>
-        <p class="guide-tip guide-item"><i class="fas fa-lightbulb"></i> Shortcuts are ignored while you are typing in a field (Problem, Comments…) or a window is open. Click on an empty area of the page to use them again. You can change the keys in <a href="/admin-panel/config/?tab=shortcuts">Settings</a>.</p>
-    </section>
+    <p class="guide-tip guide-item">
+        <svg class="ico" aria-hidden="true"><use href="#i-bulb"/></svg>
+        <span>Press <kbd>{{ panel_shortcut_labels.toggle_guide }}</kbd> anywhere in the panel to open this guide without leaving the video.</span>
+    </p>
 </section>
 
+<!-- 2. Atajos -->
+<section class="guide-section" data-guide-section="shortcuts">
+    <h4><span class="guide-num">2</span> Keyboard shortcuts</h4>
+    <p class="guide-lead guide-item">They work on the Evaluate page.</p>
+    <ul class="guide-keys">
+        <li class="guide-item"><span class="guide-keycaps"><kbd>{{ panel_shortcut_labels.mark_start }}</kbd></span><span>Mark the <b>start</b> at the current video time</span></li>
+        <li class="guide-item"><span class="guide-keycaps"><kbd>{{ panel_shortcut_labels.mark_end }}</kbd></span><span>Mark the <b>end</b> at the current video time</span></li>
+        <li class="guide-item"><span class="guide-keycaps"><kbd>{{ panel_shortcut_labels.play_pause }}</kbd></span><span>Play or pause the video</span></li>
+        <li class="guide-item"><span class="guide-keycaps"><kbd>{{ panel_shortcut_labels.rewind }}</kbd><kbd>{{ panel_shortcut_labels.forward }}</kbd></span><span>Go 5 seconds back or forward</span></li>
+        <li class="guide-item"><span class="guide-keycaps"><kbd>{{ panel_shortcut_labels.toggle_guide }}</kbd></span><span>Open or close this guide</span></li>
+    </ul>
+    <p class="guide-tip guide-item">
+        <svg class="ico" aria-hidden="true"><use href="#i-bulb"/></svg>
+        <span>Shortcuts don't work while you are typing in a field. Click an empty part of the page to use them again. You can change the keys in <a href="/admin-panel/config/?tab=shortcuts">Settings</a>.</span>
+    </p>
+</section>
+
+<!-- 3. Indicadores -->
 <section class="guide-section" data-guide-section="indicators">
-    <h4><span class="guide-num">2</span> Indicators <small>indicator_code</small></h4>
-    <h6 class="guide-subhead">Based on actions performed on the UI</h6>
-    <dl class="guide-defs">
-        <div class="guide-item"><dt><code>ACT</code> Wrong action</dt><dd>An action does not belong in the correct sequence; is omitted; is replaced by another action; or actions are performed in reversed order.</dd></div>
-        <div class="guide-item"><dt><code>DISC</code> Discontinues action</dt><dd>User points at a function as if to start executing it, but then does not; or stops executing an action before it is finished.</dd></div>
-        <div class="guide-item"><dt><code>EXE</code> Execution problem</dt><dd>Execution of the action is not done correctly or optimally.</dd></div>
-        <div class="guide-item"><dt><code>REP</code> Repeated action</dt><dd>An action is repeated with the same effect.</dd></div>
-        <div class="guide-item"><dt><code>CORR</code> Corrective action</dt><dd>An action is corrected with a subsequent action (or sequence of actions), or an action is undone.</dd></div>
-        <div class="guide-item"><dt><code>STOP</code> Task stopped</dt><dd>Starts a new task before having successfully finished the current task.</dd></div>
-    </dl>
-    <h6 class="guide-subhead">Based on verbal or non-verbal behaviour of the worker</h6>
-    <dl class="guide-defs">
-        <div class="guide-item"><dt><code>GOAL</code> Wrong goal</dt><dd>User formulates a goal that cannot be achieved with the product or does not contribute to the task goal.</dd></div>
-        <div class="guide-item"><dt><code>PUZZ</code> Puzzled</dt><dd>User indicates not knowing how to perform the task or which function is needed, or not being sure whether an action is needed.</dd></div>
-        <div class="guide-item"><dt><code>RAND</code> Random actions</dt><dd>User indicates that the current action(s) are chosen randomly.</dd></div>
-        <div class="guide-item"><dt><code>SEARCH</code> Searches for function</dt><dd>User cannot locate a specific function, or searches for a function the analyst knows does not exist.</dd></div>
-        <div class="guide-item"><dt><code>DIFF</code> Execution difficulty</dt><dd>User has physical problems executing an action, or finds it difficult or uncomfortable.</dd></div>
-        <div class="guide-item"><dt><code>DSF</code> Doubt, surprise, frustration</dt><dd>User is not sure an action was executed properly, does not understand its effect, is surprised by it, or finds the effect unsatisfactory or frustrating.</dd></div>
-        <div class="guide-item"><dt><code>REC</code> Recognition of error</dt><dd>User recognises a preceding error, or understands something previously not understood.</dd></div>
-        <div class="guide-item"><dt><code>QUIT</code> Quits task</dt><dd>User recognises the current task was not finished successfully, but continues with the next one.</dd></div>
-    </dl>
-    <p class="guide-source">Source: Vermeeren et al. (2002). DEVAN: A tool for detailed video analysis of user test data. Behaviour &amp; IT, 21(6).</p>
+    <h4><span class="guide-num">3</span> Indicators <small>indicator_code</small></h4>
+    <p class="guide-lead guide-item">The indicator is the sign that tells you the worker had trouble. Pick the one that best matches what you saw.</p>
+
+    <p class="guide-group guide-item"><svg class="ico" aria-hidden="true"><use href="#i-pointer"/></svg> What the worker <b>does</b></p>
+    <div class="guide-cards">
+        <div class="guide-card guide-item"><code>ACT</code><strong>Wrong action</strong><p>Does a step in the wrong order, skips it, or does a different step.</p></div>
+        <div class="guide-card guide-item"><code>DISC</code><strong>Discontinues action</strong><p>Starts something and stops halfway, or goes to click and doesn't.</p></div>
+        <div class="guide-card guide-item"><code>EXE</code><strong>Execution problem</strong><p>Does the right step, but badly or the long way.</p></div>
+        <div class="guide-card guide-item"><code>REP</code><strong>Repeated action</strong><p>Does the same thing again and gets the same result.</p></div>
+        <div class="guide-card guide-item"><code>CORR</code><strong>Corrective action</strong><p>Undoes or fixes something they just did.</p></div>
+        <div class="guide-card guide-item"><code>STOP</code><strong>Task stopped</strong><p>Moves on to something new before finishing the current task.</p></div>
+    </div>
+
+    <p class="guide-group guide-item"><svg class="ico" aria-hidden="true"><use href="#i-message"/></svg> What the worker <b>says or shows</b></p>
+    <div class="guide-cards">
+        <div class="guide-card guide-item"><code>GOAL</code><strong>Wrong goal</strong><p>Tries to do something the page can't do or that doesn't help the task.</p></div>
+        <div class="guide-card guide-item"><code>PUZZ</code><strong>Puzzled</strong><p>Doesn't know what to do next or which option to use.</p></div>
+        <div class="guide-card guide-item"><code>RAND</code><strong>Random actions</strong><p>Is just guessing or clicking around.</p></div>
+        <div class="guide-card guide-item"><code>SEARCH</code><strong>Searches for function</strong><p>Looks for a button or option and can't find it.</p></div>
+        <div class="guide-card guide-item"><code>DIFF</code><strong>Execution difficulty</strong><p>Finds an action physically hard, e.g. a tiny button or a tricky drag.</p></div>
+        <div class="guide-card guide-item"><code>DSF</code><strong>Doubt, surprise, frustration</strong><p>Isn't sure it worked, is surprised by the result, or gets annoyed.</p></div>
+        <div class="guide-card guide-item"><code>REC</code><strong>Recognition of error</strong><p>Realises they made a mistake earlier, or suddenly understands something.</p></div>
+        <div class="guide-card guide-item"><code>QUIT</code><strong>Quits task</strong><p>Knows the task went wrong but moves on anyway.</p></div>
+    </div>
 </section>
 
+<!-- 4. Momentos de la tarea -->
 <section class="guide-section" data-guide-section="moments">
-    <h4><span class="guide-num">3</span> Task moments <small>task_moment</small></h4>
-    <dl class="guide-defs">
-        <div class="guide-item"><dt>Qualification <span class="guide-opt">optional</span></dt><dd>Tests or qualifications taken by workers, before or after the initial instructions. <em>E.g. language proficiency test, browser check.</em></dd></div>
-        <div class="guide-item"><dt>Instructions</dt><dd>Any instructions shown to the worker, usually at the beginning, sometimes also during the task.</dd></div>
-        <div class="guide-item"><dt>Demographic questionnaire <span class="guide-opt">optional</span></dt><dd>Questions about the worker's demographic details. May contain validity-check questions.</dd></div>
-        <div class="guide-item"><dt>Training</dt><dd>Interactive or non-interactive demos or tests that help understand the instructions. <em>E.g. quiz, interactive demo, video.</em></dd></div>
-        <div class="guide-item"><dt>Main task</dt><dd>The main activity: the actual data collection that will be used later.</dd></div>
-        <div class="guide-item"><dt>Final questionnaire <span class="guide-opt">optional</span></dt><dd>Questions about the experience with the main task. <em>E.g. motivation questionnaire.</em></dd></div>
-        <div class="guide-item"><dt>Payment</dt><dd>Payment information.</dd></div>
-        <div class="guide-item"><dt>Help/Support/Feedback</dt><dd>Any help, support or feedback channel offered to workers.</dd></div>
-    </dl>
+    <h4><span class="guide-num">4</span> Task moments <small>task_moment</small></h4>
+    <p class="guide-lead guide-item">Which part of the task the worker was in. They usually appear in this order.</p>
+    <ol class="guide-timeline">
+        <li class="guide-item"><strong>Qualification <span class="guide-opt">optional</span></strong><span>A test before starting, e.g. a language test or browser check.</span></li>
+        <li class="guide-item"><strong>Instructions</strong><span>The explanation of what to do.</span></li>
+        <li class="guide-item"><strong>Demographic questionnaire <span class="guide-opt">optional</span></strong><span>Questions about the worker (age, country…).</span></li>
+        <li class="guide-item"><strong>Training</strong><span>A practice, demo or quiz to learn the task.</span></li>
+        <li class="guide-item"><strong>Main task</strong><span>The real work.</span></li>
+        <li class="guide-item"><strong>Final questionnaire <span class="guide-opt">optional</span></strong><span>Questions about how the task went.</span></li>
+        <li class="guide-item"><strong>Payment</strong><span>Information about getting paid.</span></li>
+        <li class="guide-item"><strong>Help/Support/Feedback</strong><span>Any place to ask for help or send comments.</span></li>
+    </ol>
 </section>
 
+<!-- 5. Cómo escribir un problema -->
 <section class="guide-section" data-guide-section="formulation">
-    <h4><span class="guide-num">4</span> How to write a problem <small>problem</small></h4>
-    <p class="guide-item">A usability problem is <em>"an aspect of the system and/or a demand on the user which makes it unpleasant, inefficient, onerous or impossible for the user to achieve their goals in typical usage situations."</em> (Lavery et al., 1997)</p>
+    <h4><span class="guide-num">5</span> How to write a problem <small>problem</small></h4>
+    <p class="guide-lead guide-item">A problem is anything in the task or the page that makes it <b>hard, slow, annoying or impossible</b> for the worker. Write it with one of these two patterns:</p>
+
     <div class="guide-formula guide-item">
-        <div class="guide-formula-label">From the system / task perspective</div>
-        <p>The <b>[Task/UI element]</b> <b>[problem]</b> resulting in the <b>[worker's difficulty]</b></p>
-        <ul>
-            <li>The initial instructions contain too much text, resulting in the worker skimming parts of it.</li>
-            <li>Some images are too dense, resulting in workers annotating just parts of a tumor.</li>
-        </ul>
+        <p class="guide-formula-label">Pattern A · start from the page</p>
+        <p class="guide-pattern">The <span>what</span> <span>is wrong</span>, so the worker <span>has this trouble</span>.</p>
+        <p class="guide-example"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg> The instructions have too much text, so the worker skips parts of them.</p>
     </div>
     <div class="guide-formula guide-item">
-        <div class="guide-formula-label">From the worker perspective</div>
-        <p>Worker does <b>[unexpected action]</b> instead of <b>[expected action]</b></p>
-        <ul>
-            <li>Worker moves the cursor directly to Next instead of reading the instructions.</li>
-            <li>Worker annotates red regions instead of tumor regions.</li>
-        </ul>
+        <p class="guide-formula-label">Pattern B · start from the worker</p>
+        <p class="guide-pattern">The worker <span>does this</span> instead of <span>what was expected</span>.</p>
+        <p class="guide-example"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg> The worker clicks Next instead of reading the instructions.</p>
     </div>
-    <p class="guide-tip"><i class="fas fa-lightbulb"></i> Reuse an existing problem when it is the same issue. Repeated occurrences are what the Problem summary counts.</p>
+    <p class="guide-tip guide-item">
+        <svg class="ico" aria-hidden="true"><use href="#i-bulb"/></svg>
+        <span>If you see the same problem again, <b>pick the existing one</b> instead of creating a new one. That is how the summary counts how often it happens.</span>
+    </p>
 </section>
 
+<!-- 6. Severidad -->
 <section class="guide-section" data-guide-section="severity">
-    <h4><span class="guide-num">5</span> Severity <small>severity</small></h4>
-    <div class="guide-sev guide-item guide-sev-critical">
-        <div class="guide-sev-name"><span class="badge badge-danger">Critical</span></div>
-        <ul>
-            <li><b>Slowed down:</b> hindered in solving the task.</li>
-            <li><b>Understanding:</b> does not understand how information in the system can be used to solve the task; repeats the same information in different parts of the system.</li>
-        </ul>
+    <h4><span class="guide-num">6</span> Severity <small>severity</small></h4>
+    <p class="guide-lead guide-item">Ask yourself: <b>how much did this hurt the worker?</b></p>
+    <div class="guide-sev-list">
+        <div class="guide-sev guide-item guide-sev-critical">
+            <p class="guide-sev-name"><span class="guide-sev-dot"></span>Critical</p>
+            <p class="guide-sev-sum">It blocked the worker or held them back a lot.</p>
+            <ul>
+                <li>Could hardly continue with the task.</li>
+                <li>Didn't understand how to use the information on the page.</li>
+            </ul>
+        </div>
+        <div class="guide-sev guide-item guide-sev-serious">
+            <p class="guide-sev-name"><span class="guide-sev-dot"></span>Serious</p>
+            <p class="guide-sev-sum">It cost them clear time or made them upset.</p>
+            <ul>
+                <li>Lost several seconds.</li>
+                <li>Didn't understand how a feature works.</li>
+                <li>Got clearly annoyed, or thought they broke something.</li>
+            </ul>
+        </div>
+        <div class="guide-sev guide-item guide-sev-cosmetic">
+            <p class="guide-sev-name"><span class="guide-sev-dot"></span>Cosmetic</p>
+            <p class="guide-sev-sum">A small bump; they kept going.</p>
+            <ul>
+                <li>Lost just a few seconds.</li>
+                <li>Did something without knowing why ("you just have to do it").</li>
+            </ul>
+        </div>
     </div>
-    <div class="guide-sev guide-item guide-sev-serious">
-        <div class="guide-sev-name"><span class="badge badge-warning">Serious</span></div>
-        <ul>
-            <li><b>Slowed down:</b> delayed for several seconds.</li>
-            <li><b>Understanding:</b> does not understand how a specific functionality operates or is activated; cannot explain how the system works.</li>
-            <li><b>Frustration:</b> clearly annoyed by something that cannot be done or remembered, or something illogical; believes they damaged something.</li>
-        </ul>
-    </div>
-    <div class="guide-sev guide-item guide-sev-cosmetic">
-        <div class="guide-sev-name"><span class="badge badge-secondary">Cosmetic</span></div>
-        <ul>
-            <li><b>Slowed down:</b> delayed for a few seconds.</li>
-            <li><b>Understanding:</b> does actions without being able to explain why ("you just have to do it").</li>
-        </ul>
-    </div>
-    <p class="guide-source">Source: Skov &amp; Stage (2005). Supporting Problem Identification in Usability Evaluations. OZCHI.</p>
 </section>
 
+<!-- 7. Tipos de problema -->
 <section class="guide-section" data-guide-section="types">
-    <h4><span class="guide-num">6</span> Problem types <small>type</small></h4>
-    <dl class="guide-defs">
-        <div class="guide-item"><dt>Navigation</dt><dd>Problems navigating between pages or finding the right links for information or functions. <em>E.g. trouble returning to the home page.</em></dd></div>
-        <div class="guide-item"><dt>Layout</dt><dd>Difficulties caused by web elements, display or visibility issues, inconsistency, or problematic structure and form design. <em>E.g. the font is too small.</em></dd></div>
-        <div class="guide-item"><dt>Content</dt><dd>Information is unnecessary or missing, or terminology and dialogue are hard to understand. <em>E.g. does not understand an error message.</em></dd></div>
-        <div class="guide-item"><dt>Functionality</dt><dd>A function is missing or does not work as expected. <em>E.g. expects an option to choose how many items to load per page.</em></dd></div>
-    </dl>
-    <p class="guide-source">Source: Alhadreti &amp; Mayhew (2017). J. Usability Studies, 12(3).</p>
+    <h4><span class="guide-num">7</span> Problem types <small>type</small></h4>
+    <p class="guide-lead guide-item">What part of the page caused the problem.</p>
+    <div class="guide-types">
+        <div class="guide-type guide-item">
+            <svg class="ico" aria-hidden="true"><use href="#i-compass"/></svg>
+            <strong>Navigation</strong>
+            <p>Getting lost or not finding the right link or page.</p>
+            <small>e.g. can't get back to the home page</small>
+        </div>
+        <div class="guide-type guide-item">
+            <svg class="ico" aria-hidden="true"><use href="#i-layout"/></svg>
+            <strong>Layout</strong>
+            <p>How things look or are arranged on the screen.</p>
+            <small>e.g. the text is too small</small>
+        </div>
+        <div class="guide-type guide-item">
+            <svg class="ico" aria-hidden="true"><use href="#i-text"/></svg>
+            <strong>Content</strong>
+            <p>Information that is missing, extra or hard to understand.</p>
+            <small>e.g. an error message they don't get</small>
+        </div>
+        <div class="guide-type guide-item">
+            <svg class="ico" aria-hidden="true"><use href="#i-wrench"/></svg>
+            <strong>Functionality</strong>
+            <p>Something is missing or doesn't work as expected.</p>
+            <small>e.g. no option to show more items per page</small>
+        </div>
+    </div>
 </section>
 
 </div>

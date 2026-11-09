@@ -25,9 +25,9 @@
                 {% endif %}
             </p>
             <div class="hero-actions">
-                <a class="hero-btn" href="/admin-panel/videos/"><i class="fas fa-video"></i> {% t "View Videos" %}</a>
-                <a class="hero-btn" href="/admin-panel/reportes/"><i class="fas fa-chart-line"></i> {% t "View Reports" %}</a>
-                <button class="hero-btn" type="button" data-open-guide="workflow"><i class="fas fa-book-open"></i> {% t "Evaluation Guide" %}</button>
+                <a class="hero-btn primary" href="/admin-panel/videos/"><svg class="ico" aria-hidden="true"><use href="#i-video"/></svg> {% t "View Videos" %}</a>
+                <a class="hero-btn" href="/admin-panel/audio-report/"><svg class="ico" aria-hidden="true"><use href="#i-headphones"/></svg> {% t "View Audio Report" %}</a>
+                <button class="hero-btn" type="button" data-open-guide="workflow"><svg class="ico" aria-hidden="true"><use href="#i-book-open"/></svg> {% t "Evaluation Guide" %}</button>
             </div>
         </div>
         <dl class="hero-metrics">
@@ -70,7 +70,7 @@
     <div class="dash-grid cols-1-2">
         <section class="panel">
             <header class="panel-head">
-                <h3><i class="fas fa-chart-pie"></i> {% t "Evaluation progress" %}</h3>
+                <h3><svg class="ico" aria-hidden="true"><use href="#i-pie"/></svg> {% t "Evaluation progress" %}</h3>
                 <span class="panel-note">{{ progress_total }} {% t "videos" %}</span>
             </header>
             {% if progress_total %}
@@ -99,13 +99,13 @@
                 {% endfor %}
             </ul>
             {% else %}
-            <p class="empty"><i class="fas fa-video-slash"></i> {% t "No videos available" %}</p>
+            <p class="empty"><svg class="ico" aria-hidden="true"><use href="#i-video"/></svg> {% t "No videos available" %}</p>
             {% endif %}
         </section>
 
         <section class="panel">
             <header class="panel-head">
-                <h3><i class="fas fa-bullhorn"></i> {% t "Videos by campaign" %}</h3>
+                <h3><svg class="ico" aria-hidden="true"><use href="#i-campaign"/></svg> {% t "Videos by campaign" %}</h3>
                 <ul class="legend inline">
                     {% for k, label, icon in video_states %}<li><span class="swatch st-{{ k }}"></span>{% t label %}</li>{% endfor %}
                 </ul>
@@ -118,14 +118,14 @@
     <div class="dash-grid cols-3">
         <section class="panel">
             <header class="panel-head">
-                <h3><i class="fas fa-tasks"></i> {% t "Videos by task" %}</h3>
+                <h3><svg class="ico" aria-hidden="true"><use href="#i-list"/></svg> {% t "Videos by task" %}</h3>
             </header>
             {% include "evaluation/_stacked_rows.html" with rows=task_rows kind="task" %}
         </section>
 
         <section class="panel">
             <header class="panel-head">
-                <h3><i class="fas fa-exclamation-triangle"></i> {% t "Problems by severity" %}</h3>
+                <h3><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg> {% t "Problems by severity" %}</h3>
                 <span class="panel-note">{{ severity_total }}</span>
             </header>
             {% if severity_total %}
@@ -154,14 +154,14 @@
                 {% endfor %}
             </ul>
             {% else %}
-            <p class="empty"><i class="fas fa-check-circle"></i> {% t "No problems registered yet." %}</p>
+            <p class="empty"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg> {% t "No problems registered yet." %}</p>
             {% endif %}
         </section>
 
         <section class="panel">
             <header class="panel-head">
-                <h3><i class="fas fa-tags"></i> {% t "Most used indicators" %}</h3>
-                <button type="button" class="panel-help" data-open-guide="indicators" title="{% t 'Indicators' %}"><i class="fas fa-question-circle"></i></button>
+                <h3><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg> {% t "Most used indicators" %}</h3>
+                <button type="button" class="panel-help" data-open-guide="indicators" title="{% t 'Indicators' %}" aria-label="{% t 'Indicators' %}"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg></button>
             </header>
             {% if top_indicators %}
             <ul class="hbars">
@@ -174,7 +174,7 @@
                 {% endfor %}
             </ul>
             {% else %}
-            <p class="empty"><i class="fas fa-tags"></i> {% t "No annotations yet." %}</p>
+            <p class="empty"><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg> {% t "No annotations yet." %}</p>
             {% endif %}
         </section>
     </div>
@@ -183,8 +183,8 @@
     <div class="dash-grid">
         <section class="panel">
             <header class="panel-head">
-                <h3><i class="fas fa-stream"></i> {% t "Recent activity" %}</h3>
-                <a class="panel-link" href="/admin-panel/videos/">{% t "View all" %} <i class="fas fa-arrow-right"></i></a>
+                <h3><svg class="ico" aria-hidden="true"><use href="#i-activity"/></svg> {% t "Recent activity" %}</h3>
+                <a class="panel-link" href="/admin-panel/videos/">{% t "View all" %} <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
             </header>
             {% if activity %}
             <ol class="timeline">
@@ -201,9 +201,9 @@
                         </p>
                         <p class="tl-meta">
                             {% if item.ev.completada %}
-                            <span class="chip st-completed"><i class="fas fa-check-circle"></i> {% t "Completed" %}</span>
+                            <span class="chip st-completed"><span class="chip-dot"></span>{% t "Completed" %}</span>
                             {% else %}
-                            <span class="chip st-in_progress"><i class="fas fa-hourglass-half"></i> {% t "In Progress" %}</span>
+                            <span class="chip st-in_progress"><span class="chip-dot"></span>{% t "In Progress" %}</span>
                             {% endif %}
                             {% if item.when %}<time datetime="{{ item.when|date:'c' }}" class="tl-time">{{ item.when|date:"Y-m-d H:i" }}</time>{% endif %}
                         </p>
@@ -212,7 +212,7 @@
                 {% endfor %}
             </ol>
             {% else %}
-            <p class="empty"><i class="fas fa-inbox"></i> {% t "No evaluations yet" %}</p>
+            <p class="empty"><svg class="ico" aria-hidden="true"><use href="#i-inbox"/></svg> {% t "No evaluations yet" %}</p>
             {% endif %}
         </section>
 

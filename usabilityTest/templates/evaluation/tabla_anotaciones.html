@@ -4,14 +4,17 @@
 
 {% block content %}
 <div class="tabla-anotaciones">
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+    <header class="at-header">
         <div>
-            <h2 class="mb-1">Annotation Table</h2>
-            <p class="text-muted mb-0">Same sheets as the Excel file. Annotations are saved here automatically while you evaluate a video.</p>
+            <h2>Annotation Table</h2>
+            <p class="at-subtitle">Same sheets as the Excel file. Annotations are saved here automatically while you evaluate a video.</p>
         </div>
-        <form method="get" class="form-inline mt-2">
-            <label for="videoFilter" class="mr-2">Video</label>
-            <select name="video" id="videoFilter" class="form-control" onchange="this.form.submit()">
+        <form method="get" class="at-filter">
+            <label for="videoFilter">
+                <svg class="ico" aria-hidden="true"><use href="#i-video"/></svg>
+                <span class="sr-only">Video</span>
+            </label>
+            <select name="video" id="videoFilter" onchange="this.form.submit()">
                 <option value="">All videos</option>
                 {% for ev in todas_evaluaciones %}
                 <option value="{{ ev.id }}" {% if seleccion == ev.id|stringformat:"d" %}selected{% endif %}>
@@ -19,27 +22,36 @@
                 </option>
                 {% endfor %}
             </select>
+            <svg class="ico at-filter-caret" aria-hidden="true"><use href="#i-chevron"/></svg>
         </form>
-    </div>
+        <a class="at-download" href="/admin-panel/tabla-anotaciones/excel/{% if seleccion %}?video={{ seleccion }}{% endif %}"
+           title="Download all tabs as an Excel file{% if seleccion %} (only the selected video){% endif %}">
+            <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg> Download Excel
+        </a>
+    </header>
 
-    <ul class="nav nav-tabs sheet-tabs" role="tablist">
+    <ul class="nav nav-tabs sheet-tabs at-tabs" role="tablist">
         <li class="nav-item">
             <a class="nav-link active" data-toggle="tab" href="#sheet-annotations" role="tab">
+                <svg class="ico" aria-hidden="true"><use href="#i-table"/></svg>
                 1. Annotation table <span class="tab-count">{{ anotaciones|length }}</span>
             </a>
         </li>
         <li class="nav-item">
             <a class="nav-link" data-toggle="tab" href="#sheet-problems" role="tab">
+                <svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg>
                 2. Problem table <span class="tab-count">{{ problemas|length }}</span>
             </a>
         </li>
         <li class="nav-item">
             <a class="nav-link" data-toggle="tab" href="#sheet-time" role="tab">
+                <svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg>
                 3. Time annotation <span class="tab-count">{{ tiempos|length }}</span>
             </a>
         </li>
         <li class="nav-item">
             <a class="nav-link" data-toggle="tab" href="#sheet-summary" role="tab">
+                <svg class="ico" aria-hidden="true"><use href="#i-dashboard"/></svg>
                 Problem summary
             </a>
         </li>
@@ -68,19 +80,22 @@
                             <td class="video-cell" title="{{ a.video }}">{{ a.video }}</td>
                             <td class="mono">{{ a.start_time }}</td>
                             <td class="mono">{{ a.finish_time }}</td>
-                            <td><span class="badge badge-info">{{ a.indicador }}</span></td>
-                            <td>{{ a.contexto }}</td>
+                            <td><span class="at-chip at-chip-code">{{ a.indicador }}</span></td>
+                            <td><span class="at-moment">{{ a.contexto }}</span></td>
                             <td class="wrap">{{ a.problema }}</td>
-                            <td class="wrap">{{ a.comentarios }}</td>
+                            <td class="wrap at-muted">{{ a.comentarios|default:"—" }}</td>
                             <td class="actions-cell">
                                 <a href="/admin-panel/evaluar/{{ a.evaluacion.payment_id }}/{{ a.evaluacion.task_id }}/#annotation-table"
-                                   class="btn btn-sm btn-outline-primary" title="Edit in the evaluation page">
-                                    <i class="fas fa-pen"></i>
+                                   class="at-icon-btn" title="Edit in the evaluation page" aria-label="Edit in the evaluation page">
+                                    <svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg>
                                 </a>
                             </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="8" class="text-center text-muted py-4">No annotations yet.</td></tr>
+                        <tr><td colspan="8" class="at-empty">
+                            <svg class="ico" aria-hidden="true"><use href="#i-table"/></svg>
+                            No annotations yet.
+                        </td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -106,22 +121,25 @@
                         {% for p in problemas %}
                         <tr>
                             <td class="video-cell" title="{{ p.video }}">{{ p.video }}</td>
-                            <td><span class="badge badge-dark">{{ p.problema.codigo }}</span></td>
+                            <td><span class="at-chip at-chip-code">{{ p.problema.codigo }}</span></td>
                             <td class="wrap">{{ p.problema.descripcion }}</td>
                             <td>
-                                <span class="badge badge-{% if p.severidad == 'Critical' %}danger{% elif p.severidad == 'Serious' %}warning{% else %}secondary{% endif %}">{{ p.severidad }}</span>
+                                <span class="at-chip at-sev at-sev-{% if p.severidad == 'Critical' %}critical{% elif p.severidad == 'Serious' %}serious{% else %}minor{% endif %}">{{ p.severidad }}</span>
                             </td>
                             <td>{{ p.tipo }}</td>
-                            <td class="wrap">{{ p.comentarios }}</td>
+                            <td class="wrap at-muted">{{ p.comentarios|default:"—" }}</td>
                             <td class="actions-cell">
                                 <a href="/admin-panel/evaluar/{{ p.evaluacion.payment_id }}/{{ p.evaluacion.task_id }}/#problem-table"
-                                   class="btn btn-sm btn-outline-primary" title="Edit in the evaluation page">
-                                    <i class="fas fa-pen"></i>
+                                   class="at-icon-btn" title="Edit in the evaluation page" aria-label="Edit in the evaluation page">
+                                    <svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg>
                                 </a>
                             </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="7" class="text-center text-muted py-4">No problems registered yet.</td></tr>
+                        <tr><td colspan="7" class="at-empty">
+                            <svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg>
+                            No problems registered yet.
+                        </td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -136,15 +154,18 @@
         <!-- Summary: occurrences per problem per video -->
         <div class="tab-pane fade" id="sheet-summary" role="tabpanel">
             {% for r in resumen_videos %}
-            <div class="card mb-4">
-                <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
-                    <span>
-                        <strong>Video:</strong> <span class="mono" title="{{ r.video }}">{{ r.video|truncatechars:40 }}</span>
-                        &middot; Task {{ r.evaluacion.task_id }}
-                    </span>
-                    <a href="/admin-panel/evaluar/{{ r.evaluacion.payment_id }}/{{ r.evaluacion.task_id }}/#problem-summary" class="btn btn-sm btn-outline-secondary">Open</a>
-                </div>
-                <div class="card-body">
+            <section class="at-summary">
+                <header class="at-summary-head">
+                    <div class="at-summary-title">
+                        <svg class="ico" aria-hidden="true"><use href="#i-video"/></svg>
+                        <span class="mono" title="{{ r.video }}">{{ r.video|truncatechars:40 }}</span>
+                        <span class="at-chip">Task {{ r.evaluacion.task_id }}</span>
+                    </div>
+                    <a href="/admin-panel/evaluar/{{ r.evaluacion.payment_id }}/{{ r.evaluacion.task_id }}/#problem-summary" class="at-btn">
+                        Open <svg class="ico" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
+                    </a>
+                </header>
+                <div class="at-summary-body">
                     <div class="summary-stats">
                         <div class="summary-stat">
                             <div class="label">Annotations</div>
@@ -161,9 +182,12 @@
                     </div>
                     {% include "evaluation/_resumen_tabla.html" with filas=r.filas %}
                 </div>
-            </div>
+            </section>
             {% empty %}
-            <p class="text-muted text-center py-4">No annotations yet.</p>
+            <p class="at-empty at-empty-block">
+                <svg class="ico" aria-hidden="true"><use href="#i-dashboard"/></svg>
+                No annotations yet.
+            </p>
             {% endfor %}
         </div>
     </div>
